@@ -669,7 +669,10 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.eeg] != nil {
+            print("📝 EEG 데이터 CSV 기록됨 (배치 수집 설정 있음)")
             dataRecorder.recordEEGData([reading])
+        } else if isRecording {
+            print("❌ EEG 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToEEGBuffer(reading)
@@ -680,7 +683,10 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.ppg] != nil {
+            print("📝 PPG 데이터 CSV 기록됨 (배치 수집 설정 있음)")
             dataRecorder.recordPPGData([reading])
+        } else if isRecording {
+            print("❌ PPG 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToPPGBuffer(reading)
@@ -691,7 +697,10 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.accelerometer] != nil {
+            print("📝 ACC 데이터 CSV 기록됨 (배치 수집 설정 있음)")
             dataRecorder.recordAccelerometerData([reading])
+        } else if isRecording {
+            print("❌ ACC 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToAccelerometerBuffer(reading)
