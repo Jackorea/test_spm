@@ -34,7 +34,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     // Auto-reconnection 관리
     private var lastConnectedPeripheralIdentifier: UUID?
-    private var isAutoReconnectEnabled: Bool
+    private var isAutoReconnectEnabled: Bool = true
+    private var isManualDisconnection: Bool = false  // 수동 연결해제 플래그 추가
     
     // MARK: - Initialization
     
@@ -47,7 +48,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         self.configuration = configuration
         self.logger = logger
         self.dataParser = SensorDataParser(configuration: configuration)
-        self.isAutoReconnectEnabled = true  // 기본값, 외부에서 설정됨
         
         super.init()
         
@@ -120,6 +120,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     public func disconnect() {
         guard let peripheral = connectedPeripheral else { return }
         
+        isManualDisconnection = true  // 수동 연결해제 플래그 설정
         centralManager.cancelPeripheralConnection(peripheral)
     }
     
@@ -218,10 +219,16 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             connectedPeripheral = nil
         }
         
-        // auto-reconnection을 처리합니다
-        if !isAutoReconnectEnabled {
+        // 수동 연결해제인지 확인
+        if isManualDisconnection {
+            // 수동 연결해제의 경우 자동 재연결하지 않음
+            isManualDisconnection = false  // 플래그 리셋
+            connectionState = .disconnected
+        } else if !isAutoReconnectEnabled {
+            // 자동 재연결이 비활성화된 경우
             connectionState = .disconnected
         } else {
+            // 예기치 않은 연결해제의 경우에만 자동 재연결
             connectionState = .reconnecting(deviceName)
             centralManager.connect(peripheral, options: nil)
         }
