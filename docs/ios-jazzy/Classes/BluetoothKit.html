@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>BluetoothKit Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/BluetoothKit" class="dashAnchor"></a>
+    <a title="BluetoothKit Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">BluetoothKit SDK Documentation</a> (100% documented)</p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">BluetoothKit</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Classes.html">Classes</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        BluetoothKit Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/BluetoothKit.html">BluetoothKit</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/AccelerometerReading.html">AccelerometerReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BatteryReading.html">BatteryReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BluetoothDevice.html">BluetoothDevice</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/EEGReading.html">EEGReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/PPGReading.html">PPGReading</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>BluetoothKit</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mf">13.0</span><span class="p">,</span> <span class="n">macOS</span> <span class="mf">10.15</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="kt">BluetoothKit</span> <span class="p">:</span> <span class="kt">ObservableObject</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+
+                </div>
+              </div>
+            <p>LinkBand 센서에서 데이터를 읽고 연결을 관리하는 메인 클래스입니다.</p>
+
+<p>이 클래스는 Bluetooth Low Energy를 통해 LinkBand 디바이스와 통신하며,
+EEG, PPG, 가속도계, 배터리 데이터를 실시간으로 수신합니다.
+SwiftUI의 <code>@ObservableObject</code>로 구현되어 UI와 자동으로 동기화됩니다.</p>
+<h2 id='기본-사용법' class='heading'>기본 사용법</h2>
+<pre class="highlight swift"><code><span class="kd">@StateObject</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">bluetoothKit</span> <span class="o">=</span> <span class="kt">BluetoothKit</span><span class="p">()</span>
+
+<span class="c1">// 1. 디바이스 스캔</span>
+<span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startScanning</span><span class="p">()</span>
+
+<span class="c1">// 2. 디바이스 연결</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">device</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">discoveredDevices</span><span class="o">.</span><span class="n">first</span> <span class="p">{</span>
+    <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">device</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 3. 데이터 기록</span>
+<span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startRecording</span><span class="p">()</span>
+
+<span class="c1">// 4. 센서 데이터 접근</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">eeg</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">latestEEGReading</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"EEG: </span><span class="se">\(</span><span class="n">eeg</span><span class="o">.</span><span class="n">channel1</span><span class="se">)</span><span class="s">µV, </span><span class="se">\(</span><span class="n">eeg</span><span class="o">.</span><span class="n">channel2</span><span class="se">)</span><span class="s">µV"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Public%20Properties"></a>
+                <a name="//apple_ref/swift/Section/Public Properties" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Public%20Properties"></a>
+                  <h3 class="section-name"><span>Public Properties</span>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC17discoveredDevicesSayAA0A6DeviceVGvp"></a>
+                    <a name="//apple_ref/swift/Property/discoveredDevices" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC17discoveredDevicesSayAA0A6DeviceVGvp">discoveredDevices</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>스캔 중 발견된 Bluetooth 디바이스 목록.</p>
+
+<p>이 배열은 스캔 중 새 디바이스가 발견될 때 자동으로 업데이트됩니다.
+디바이스는 설정된 디바이스 이름 접두사로 필터링됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 발견된 디바이스 목록 표시</span>
+<span class="kt">ForEach</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">discoveredDevices</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="p">{</span> <span class="n">device</span> <span class="k">in</span>
+    <span class="kt">Button</span><span class="p">(</span><span class="n">device</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">device</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 특정 디바이스 연결</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">targetDevice</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">discoveredDevices</span><span class="o">.</span><span class="nf">first</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"LinkBand"</span><span class="p">)</span> <span class="p">})</span> <span class="p">{</span>
+    <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">targetDevice</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">discoveredDevices</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Structs/BluetoothDevice.html">BluetoothDevice</a></span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC27connectionStatusDescriptionSSvp"></a>
+                    <a name="//apple_ref/swift/Property/connectionStatusDescription" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC27connectionStatusDescriptionSSvp">connectionStatusDescription</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>현재 연결 상태의 사용자 친화적인 설명.</p>
+
+<p>연결 상태를 사용자에게 표시하기 위한 한국어 문자열입니다:</p>
+
+<ul>
+<li>&ldquo;연결 안됨&rdquo;: 활성 연결 없음</li>
+<li>&ldquo;스캔 중&hellip;&rdquo;: 현재 디바이스 스캔 중<br></li>
+<li>&ldquo;[디바이스명]에 연결 중&hellip;&rdquo;: 디바이스 연결 시도 중</li>
+<li>&ldquo;[디바이스명]에 연결됨&rdquo;: 디바이스에 성공적으로 연결됨</li>
+<li>&ldquo;[디바이스명]에 재연결 중&hellip;&rdquo;: 연결 해제 후 재연결 시도 중</li>
+<li>&ldquo;실패: [오류 메시지]&rdquo;: 연결 또는 작업 실패</li>
+</ul>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 상태바에 연결 상태 표시</span>
+<span class="kt">Text</span><span class="p">(</span><span class="s">"상태: </span><span class="se">\(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">connectionStatusDescription</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">foregroundColor</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isConnected</span> <span class="p">?</span> <span class="o">.</span><span class="nv">green</span> <span class="p">:</span> <span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="c1">// 연결 완료 감지</span>
+<span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">connectionStatusDescription</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"연결됨"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 연결 완료 후 자동 작업 실행</span>
+    <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startRecording</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">connectionStatusDescription</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC10isScanningSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isScanning" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC10isScanningSbvp">isScanning</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>라이브러리가 현재 디바이스를 스캔 중인지 여부.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 스캔 상태에 따른 UI 표시</span>
+<span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isScanning</span> <span class="p">{</span>
+    <span class="kt">Button</span><span class="p">(</span><span class="s">"중지"</span><span class="p">)</span> <span class="p">{</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">stopScanning</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="kt">Button</span><span class="p">(</span><span class="s">"스캔 시작"</span><span class="p">)</span> <span class="p">{</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startScanning</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">isScanning</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC11isRecordingSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isRecording" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC11isRecordingSbvp">isRecording</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>데이터 기록이 현재 활성화되어 있는지 여부.</p>
+
+<p><code>true</code>일 때, 수신된 모든 센서 데이터가 파일에 저장됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 기록 상태 확인</span>
+<span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isRecording</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"현재 기록 중..."</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// SwiftUI에서 기록 버튼</span>
+<span class="kt">Button</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isRecording</span> <span class="p">?</span> <span class="s">"기록 중지"</span> <span class="p">:</span> <span class="s">"기록 시작"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isRecording</span> <span class="p">{</span>
+        <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">stopRecording</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startRecording</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">isRecording</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC22isAutoReconnectEnabledSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isAutoReconnectEnabled" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC22isAutoReconnectEnabledSbvp">isAutoReconnectEnabled</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>auto-reconnection이 현재 활성화되어 있는지 여부.</p>
+
+<p><code>true</code>일 때, 연결이 끊어지면 라이브러리가 자동으로 재연결을 시도합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 자동 재연결 토글</span>
+<span class="kt">Toggle</span><span class="p">(</span><span class="s">"자동 재연결"</span><span class="p">,</span> <span class="nv">isOn</span><span class="p">:</span> <span class="n">$bluetoothKit</span><span class="o">.</span><span class="n">isAutoReconnectEnabled</span><span class="p">)</span>
+
+<span class="c1">// 설정에 따른 UI 표시</span>
+<span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isAutoReconnectEnabled</span> <span class="p">{</span>
+    <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"arrow.triangle.2.circlepath"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">foregroundColor</span><span class="p">(</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">isAutoReconnectEnabled</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC16latestEEGReadingAA0D0VSgvp"></a>
+                    <a name="//apple_ref/swift/Property/latestEEGReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC16latestEEGReadingAA0D0VSgvp">latestEEGReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>가장 최근의 EEG (뇌전도) 읽기값.</p>
+
+<p>마이크로볼트(µV) 단위의 2채널 뇌 활동 데이터와 lead-off 상태를 포함합니다.
+아직 EEG 데이터를 받지 못한 경우 <code>nil</code>입니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// EEG 데이터 표시</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">eeg</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">latestEEGReading</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"EEG: </span><span class="se">\(</span><span class="n">eeg</span><span class="o">.</span><span class="n">channel1</span><span class="se">)</span><span class="s">µV / </span><span class="se">\(</span><span class="n">eeg</span><span class="o">.</span><span class="n">channel2</span><span class="se">)</span><span class="s">µV"</span><span class="p">)</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"Lead-off: </span><span class="se">\(</span><span class="n">eeg</span><span class="o">.</span><span class="n">leadOff</span> <span class="p">?</span> <span class="s">"감지됨"</span> <span class="p">:</span> <span class="s">"정상"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"EEG 데이터 없음"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">latestEEGReading</span><span class="p">:</span> <span class="kt"><a href="../Structs/EEGReading.html">EEGReading</a></span><span class="p">?</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC16latestPPGReadingAA0D0VSgvp"></a>
+                    <a name="//apple_ref/swift/Property/latestPPGReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC16latestPPGReadingAA0D0VSgvp">latestPPGReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>가장 최근의 PPG (광전 용적 맥파) 읽기값.</p>
+
+<p>심박수 모니터링을 위한 적색 및 적외선 LED 값을 포함합니다.
+아직 PPG 데이터를 받지 못한 경우 <code>nil</code>입니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// PPG 데이터 표시</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">ppg</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">latestPPGReading</span> <span class="p">{</span>
+    <span class="kt">VStack</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Red: </span><span class="se">\(</span><span class="n">ppg</span><span class="o">.</span><span class="n">red</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"IR: </span><span class="se">\(</span><span class="n">ppg</span><span class="o">.</span><span class="n">infrared</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"심박수 계산 가능"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"PPG 데이터 대기 중..."</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">latestPPGReading</span><span class="p">:</span> <span class="kt"><a href="../Structs/PPGReading.html">PPGReading</a></span><span class="p">?</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC26latestAccelerometerReadingAA0dE0VSgvp"></a>
+                    <a name="//apple_ref/swift/Property/latestAccelerometerReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC26latestAccelerometerReadingAA0dE0VSgvp">latestAccelerometerReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>가장 최근의 가속도계 읽기값.</p>
+
+<p>모션 감지를 위한 3축 가속도 데이터를 포함합니다.
+아직 가속도계 데이터를 받지 못한 경우 <code>nil</code>입니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 가속도계 데이터 표시</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">accel</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">latestAccelerometerReading</span> <span class="p">{</span>
+    <span class="kt">HStack</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"X: </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="n">accel</span><span class="o">.</span><span class="n">x</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Y: </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="n">accel</span><span class="o">.</span><span class="n">y</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Z: </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="n">accel</span><span class="o">.</span><span class="n">z</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">latestAccelerometerReading</span><span class="p">:</span> <span class="kt"><a href="../Structs/AccelerometerReading.html">AccelerometerReading</a></span><span class="p">?</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC20latestBatteryReadingAA0dE0VSgvp"></a>
+                    <a name="//apple_ref/swift/Property/latestBatteryReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC20latestBatteryReadingAA0dE0VSgvp">latestBatteryReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>가장 최근의 배터리 레벨 읽기값.</p>
+
+<p>연결된 디바이스의 배터리 백분율(0-100%)을 포함합니다.
+아직 배터리 데이터를 받지 못한 경우 <code>nil</code>입니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 배터리 상태 표시</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">battery</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">latestBatteryReading</span> <span class="p">{</span>
+    <span class="kt">HStack</span> <span class="p">{</span>
+        <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"battery.25"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="n">battery</span><span class="o">.</span><span class="n">percentage</span><span class="p">)</span><span class="se">)</span><span class="s">%"</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">foregroundColor</span><span class="p">(</span><span class="n">battery</span><span class="o">.</span><span class="n">percentage</span> <span class="o">&lt;</span> <span class="mi">20</span> <span class="p">?</span> <span class="o">.</span><span class="nv">red</span> <span class="p">:</span> <span class="o">.</span><span class="n">primary</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">latestBatteryReading</span><span class="p">:</span> <span class="kt"><a href="../Structs/BatteryReading.html">BatteryReading</a></span><span class="p">?</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC13recordedFilesSay10Foundation3URLVGvp"></a>
+                    <a name="//apple_ref/swift/Property/recordedFiles" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC13recordedFilesSay10Foundation3URLVGvp">recordedFiles</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>기록된 데이터 파일 목록.</p>
+
+<p>기록이 완료되면 자동으로 업데이트됩니다.
+각 기록 세션은 여러 CSV 파일(센서 타입당 하나)을 생성합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 기록된 파일 목록 표시</span>
+<span class="kt">List</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">recordedFiles</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">file</span> <span class="k">in</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">lastPathComponent</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 파일 개수 표시</span>
+<span class="kt">Text</span><span class="p">(</span><span class="s">"저장된 파일: </span><span class="se">\(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">recordedFiles</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s">개"</span><span class="p">)</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">recordedFiles</span><span class="p">:</span> <span class="p">[</span><span class="kt">URL</span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC02isA8DisabledSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isBluetoothDisabled" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC02isA8DisabledSbvp">isBluetoothDisabled</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Bluetooth가 현재 비활성화되어 있는지 여부.</p>
+
+<p>Bluetooth가 꺼지면 자동으로 <code>true</code>로 설정됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// Bluetooth 상태 경고 표시</span>
+<span class="k">if</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isBluetoothDisabled</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"⚠️ Bluetooth를 활성화해주세요"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">foregroundColor</span><span class="p">(</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 스캔 버튼 비활성화</span>
+<span class="kt">Button</span><span class="p">(</span><span class="s">"스캔 시작"</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">disabled</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isBluetoothDisabled</span><span class="p">)</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Published</span>
+<span class="kd">public</span> <span class="k">var</span> <span class="nv">isBluetoothDisabled</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Initialization"></a>
+                <a name="//apple_ref/swift/Section/Initialization" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Initialization"></a>
+                  <h3 class="section-name"><span>Initialization</span>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAACABycfc"></a>
+                    <a name="//apple_ref/swift/Method/init()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAACABycfc">init()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>새로운 BluetoothKit 인스턴스를 생성합니다.</p>
+
+<p>기본 설정으로 초기화되며, 바로 사용할 수 있습니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">bluetoothKit</span> <span class="o">=</span> <span class="kt">BluetoothKit</span><span class="p">()</span>
+<span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startScanning</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Public%20Interface"></a>
+                <a name="//apple_ref/swift/Section/Public Interface" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Public%20Interface"></a>
+                  <h3 class="section-name"><span>Public Interface</span>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC13startScanningyyF"></a>
+                    <a name="//apple_ref/swift/Method/startScanning()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC13startScanningyyF">startScanning()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Bluetooth 디바이스 스캔을 시작합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startScanning</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">startScanning</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC12stopScanningyyF"></a>
+                    <a name="//apple_ref/swift/Method/stopScanning()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC12stopScanningyyF">stopScanning()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Bluetooth 디바이스 스캔을 중지합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">stopScanning</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">stopScanning</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC7connect2toyAA0A6DeviceV_tF"></a>
+                    <a name="//apple_ref/swift/Method/connect(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC7connect2toyAA0A6DeviceV_tF">connect(to:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>특정 Bluetooth 디바이스에 연결합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">if</span> <span class="k">let</span> <span class="nv">device</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">discoveredDevices</span><span class="o">.</span><span class="nf">first</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"LinkBand"</span><span class="p">)</span> <span class="p">})</span> <span class="p">{</span>
+    <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">device</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">connect</span><span class="p">(</span><span class="n">to</span> <span class="nv">device</span><span class="p">:</span> <span class="kt"><a href="../Structs/BluetoothDevice.html">BluetoothDevice</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>device</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>연결할 디바이스</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC10disconnectyyF"></a>
+                    <a name="//apple_ref/swift/Method/disconnect()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC10disconnectyyF">disconnect()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>현재 연결된 디바이스에서 연결을 해제합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">disconnect</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">disconnect</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC14startRecordingyyF"></a>
+                    <a name="//apple_ref/swift/Method/startRecording()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC14startRecordingyyF">startRecording()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>센서 데이터를 파일로 기록하기 시작합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">startRecording</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">startRecording</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC13stopRecordingyyF"></a>
+                    <a name="//apple_ref/swift/Method/stopRecording()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC13stopRecordingyyF">stopRecording()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>센서 데이터 기록을 중지합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">stopRecording</span><span class="p">()</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">stopRecording</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC19recordingsDirectory10Foundation3URLVvp"></a>
+                    <a name="//apple_ref/swift/Property/recordingsDirectory" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC19recordingsDirectory10Foundation3URLVvp">recordingsDirectory</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>기록이 저장되는 디렉토리를 가져옵니다.</p>
+
+<p>기록된 파일에 프로그래밍적으로 접근하거나 공유 기능을 위해 사용하세요.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 기록 디렉토리 경로 표시</span>
+<span class="kt">Text</span><span class="p">(</span><span class="s">"저장 위치: </span><span class="se">\(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">recordingsDirectory</span><span class="o">.</span><span class="n">path</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+
+<span class="c1">// 파일 공유</span>
+<span class="k">let</span> <span class="nv">activityViewController</span> <span class="o">=</span> <span class="kt">UIActivityViewController</span><span class="p">(</span>
+    <span class="nv">activityItems</span><span class="p">:</span> <span class="p">[</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">recordingsDirectory</span><span class="p">],</span>
+    <span class="nv">applicationActivities</span><span class="p">:</span> <span class="kc">nil</span>
+<span class="p">)</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">recordingsDirectory</span><span class="p">:</span> <span class="kt">URL</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>CSV 및 JSON 파일이 저장되는 documents 디렉토리의 URL.</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC11isConnectedSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isConnected" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC11isConnectedSbvp">isConnected</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>현재 디바이스에 연결되어 있는지 확인합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 연결 상태에 따른 UI 표시</span>
+<span class="kt">Circle</span><span class="p">()</span>
+    <span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isConnected</span> <span class="p">?</span> <span class="kt">Color</span><span class="o">.</span><span class="nv">green</span> <span class="p">:</span> <span class="kt">Color</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">height</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1">// 연결 상태에 따른 버튼 활성화</span>
+<span class="kt">Button</span><span class="p">(</span><span class="s">"기록 시작"</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">disabled</span><span class="p">(</span><span class="o">!</span><span class="n">bluetoothKit</span><span class="o">.</span><span class="n">isConnected</span><span class="p">)</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">isConnected</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>디바이스가 연결되어 데이터 스트리밍 준비가 되었으면 <code>true</code>.</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKitAAC16setAutoReconnect7enabledySb_tF"></a>
+                    <a name="//apple_ref/swift/Method/setAutoReconnect(enabled:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKitAAC16setAutoReconnect7enabledySb_tF">setAutoReconnect(enabled:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>auto-reconnection을 활성화하거나 비활성화합니다.</p>
+
+<p>활성화되면, 연결이 예기치 않게 끊어졌을 때(사용자 작업이 아닌 경우)
+라이브러리가 자동으로 마지막에 연결된 디바이스에 재연결을 시도합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 견고한 연결을 위해 auto-reconnect 활성화</span>
+<span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">setAutoReconnect</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+
+<span class="c1">// 수동 연결 제어를 위해 비활성화</span>
+<span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">setAutoReconnect</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">setAutoReconnect</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>enabled</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>연결이 끊어졌을 때 자동으로 재연결할지 여부.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>© 2024 BluetoothKit SDK. All rights reserved.</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>

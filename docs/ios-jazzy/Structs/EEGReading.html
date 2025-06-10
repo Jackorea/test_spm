@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>EEGReading Structure Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Struct/EEGReading" class="dashAnchor"></a>
+    <a title="EEGReading Structure Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">BluetoothKit SDK Documentation</a> (100% documented)</p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">BluetoothKit</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Structs.html">Structures</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        EEGReading Structure Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/BluetoothKit.html">BluetoothKit</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/AccelerometerReading.html">AccelerometerReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BatteryReading.html">BatteryReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BluetoothDevice.html">BluetoothDevice</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/EEGReading.html">EEGReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/PPGReading.html">PPGReading</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>EEGReading</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">EEGReading</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                </div>
+              </div>
+            <p>EEG(뇌전도) 센서 읽기값을 나타내는 구조체입니다.</p>
+
+<p>이 구조체는 2채널 EEG 데이터와 관련 메타데이터를 포함합니다.
+전압 값은 마이크로볼트(µV) 단위로 표현되며, 원시 ADC 값도 함께 제공됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">eegReading</span> <span class="o">=</span> <span class="kt">EEGReading</span><span class="p">(</span>
+    <span class="nv">channel1</span><span class="p">:</span> <span class="mf">15.3</span><span class="p">,</span>
+    <span class="nv">channel2</span><span class="p">:</span> <span class="o">-</span><span class="mf">8.7</span><span class="p">,</span>
+    <span class="nv">ch1Raw</span><span class="p">:</span> <span class="mi">125043</span><span class="p">,</span>
+    <span class="nv">ch2Raw</span><span class="p">:</span> <span class="o">-</span><span class="mi">67834</span><span class="p">,</span>
+    <span class="nv">leadOff</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">)</span>
+</code></pre>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV8channel1Sdvp"></a>
+                    <a name="//apple_ref/swift/Property/channel1" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV8channel1Sdvp">channel1</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>채널 1의 EEG 전압값 (마이크로볼트 단위)</p>
+
+<p>첫 번째 EEG 전극에서 측정된 전압입니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">channel1</span><span class="p">:</span> <span class="kt">Double</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV8channel2Sdvp"></a>
+                    <a name="//apple_ref/swift/Property/channel2" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV8channel2Sdvp">channel2</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>채널 2의 EEG 전압값 (마이크로볼트 단위)</p>
+
+<p>두 번째 EEG 전극에서 측정된 전압입니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">channel2</span><span class="p">:</span> <span class="kt">Double</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV6ch1Raws5Int32Vvp"></a>
+                    <a name="//apple_ref/swift/Property/ch1Raw" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV6ch1Raws5Int32Vvp">ch1Raw</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>채널 1의 원시 ADC 값입니다.</p>
+
+<p>아날로그-디지털 변환기에서 직접 얻은 24비트 정수값입니다.
+디버깅이나 고급 신호 처리에 사용될 수 있습니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">ch1Raw</span><span class="p">:</span> <span class="kt">Int32</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV6ch2Raws5Int32Vvp"></a>
+                    <a name="//apple_ref/swift/Property/ch2Raw" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV6ch2Raws5Int32Vvp">ch2Raw</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>채널 2의 원시 ADC 값입니다.</p>
+
+<p>아날로그-디지털 변환기에서 직접 얻은 24비트 정수값입니다.
+디버깅이나 고급 신호 처리에 사용될 수 있습니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">ch2Raw</span><span class="p">:</span> <span class="kt">Int32</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV7leadOffSbvp"></a>
+                    <a name="//apple_ref/swift/Property/leadOff" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV7leadOffSbvp">leadOff</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>전극 연결 해제 상태를 나타냅니다.</p>
+
+<p><code>true</code>일 때 전극이 피부에서 분리되었거나 접촉이 불량함을 의미합니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">leadOff</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV9timestamp10Foundation4DateVvp"></a>
+                    <a name="//apple_ref/swift/Property/timestamp" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV9timestamp10Foundation4DateVvp">timestamp</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>데이터가 측정된 시간입니다.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">Date</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>© 2024 BluetoothKit SDK. All rights reserved.</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Structures  Reference</title>
+    <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/jazzy.js" defer></script>
+    
+    <script src="js/lunr.min.js" defer></script>
+    <script src="js/typeahead.jquery.js" defer></script>
+    <script src="js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Section/Structures" class="dashAnchor"></a>
+    <a title="Structures  Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="index.html">BluetoothKit SDK Documentation</a> (100% documented)</p>
+        <div class="header-right">
+          <form role="search" action="search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="index.html">BluetoothKit</a>
+        <img id="carat" src="img/carat.png" alt=""/>
+        Structures  Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Classes/BluetoothKit.html">BluetoothKit</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Structs/AccelerometerReading.html">AccelerometerReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/BatteryReading.html">BatteryReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/BluetoothDevice.html">BluetoothDevice</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/EEGReading.html">EEGReading</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/PPGReading.html">PPGReading</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Structures</h1>
+            <p>The following structures are available globally.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Device%20Models"></a>
+                <a name="//apple_ref/swift/Section/Device Models" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Device%20Models"></a>
+                  <h3 class="section-name"><span>Device Models</span>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit0A6DeviceV"></a>
+                    <a name="//apple_ref/swift/Struct/BluetoothDevice" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit0A6DeviceV">BluetoothDevice</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Bluetooth 디바이스를 나타내는 구조체입니다.</p>
+
+<p>스캔 중 발견된 Bluetooth Low Energy (BLE) 디바이스의 정보를 담고 있습니다.
+이 구조체는 연결 대상 디바이스를 식별하고 연결 작업에 사용됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="c1">// 특정 디바이스 연결</span>
+<span class="k">if</span> <span class="k">let</span> <span class="nv">device</span> <span class="o">=</span> <span class="n">bluetoothKit</span><span class="o">.</span><span class="n">discoveredDevices</span><span class="o">.</span><span class="nf">first</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"LinkBand"</span><span class="p">)</span> <span class="p">})</span> <span class="p">{</span>
+    <span class="n">bluetoothKit</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">device</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+
+                        <a href="Structs/BluetoothDevice.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BluetoothDevice</span> <span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Sensor%20Data%20Models"></a>
+                <a name="//apple_ref/swift/Section/Sensor Data Models" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Sensor%20Data%20Models"></a>
+                  <h3 class="section-name"><span>Sensor Data Models</span>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10EEGReadingV"></a>
+                    <a name="//apple_ref/swift/Struct/EEGReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10EEGReadingV">EEGReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>EEG(뇌전도) 센서 읽기값을 나타내는 구조체입니다.</p>
+
+<p>이 구조체는 2채널 EEG 데이터와 관련 메타데이터를 포함합니다.
+전압 값은 마이크로볼트(µV) 단위로 표현되며, 원시 ADC 값도 함께 제공됩니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">eegReading</span> <span class="o">=</span> <span class="kt">EEGReading</span><span class="p">(</span>
+    <span class="nv">channel1</span><span class="p">:</span> <span class="mf">15.3</span><span class="p">,</span>
+    <span class="nv">channel2</span><span class="p">:</span> <span class="o">-</span><span class="mf">8.7</span><span class="p">,</span>
+    <span class="nv">ch1Raw</span><span class="p">:</span> <span class="mi">125043</span><span class="p">,</span>
+    <span class="nv">ch2Raw</span><span class="p">:</span> <span class="o">-</span><span class="mi">67834</span><span class="p">,</span>
+    <span class="nv">leadOff</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">)</span>
+</code></pre>
+
+                        <a href="Structs/EEGReading.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">EEGReading</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit10PPGReadingV"></a>
+                    <a name="//apple_ref/swift/Struct/PPGReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit10PPGReadingV">PPGReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>PPG(광전 용적 맥파) 센서 읽기값을 나타내는 구조체입니다.</p>
+
+<p>PPG는 심박수와 혈류량 모니터링에 사용되는 광학 센서입니다.
+적색(Red)과 적외선(IR) LED를 사용하여 혈액의 산소 포화도와
+심박수를 측정할 수 있습니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">ppgReading</span> <span class="o">=</span> <span class="kt">PPGReading</span><span class="p">(</span>
+    <span class="nv">red</span><span class="p">:</span> <span class="mi">125043</span><span class="p">,</span>
+    <span class="nv">ir</span><span class="p">:</span> <span class="mi">134567</span>
+<span class="p">)</span>
+</code></pre>
+
+                        <a href="Structs/PPGReading.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">PPGReading</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit20AccelerometerReadingV"></a>
+                    <a name="//apple_ref/swift/Struct/AccelerometerReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit20AccelerometerReadingV">AccelerometerReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>3축 가속도계 센서 읽기값을 나타내는 구조체입니다.</p>
+
+<p>이 구조체는 디바이스의 움직임과 방향을 감지하기 위한
+X, Y, Z축의 가속도 데이터를 포함합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">accelReading</span> <span class="o">=</span> <span class="kt">AccelerometerReading</span><span class="p">(</span>
+    <span class="nv">x</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span>   <span class="c1">//</span>
+    <span class="nv">y</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1">//</span>
+    <span class="nv">z</span><span class="p">:</span> <span class="mi">0</span>       <span class="c1">//</span>
+<span class="p">)</span>
+</code></pre>
+
+                        <a href="Structs/AccelerometerReading.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">AccelerometerReading</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:12BluetoothKit14BatteryReadingV"></a>
+                    <a name="//apple_ref/swift/Struct/BatteryReading" class="dashAnchor"></a>
+                    <a class="token" href="#/s:12BluetoothKit14BatteryReadingV">BatteryReading</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>디바이스 배터리 상태를 나타내는 구조체입니다.</p>
+
+<p>연결된 센서 디바이스의 배터리 잔량을 백분율로 제공합니다.</p>
+<h2 id='예시' class='heading'>예시</h2>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">batteryReading</span> <span class="o">=</span> <span class="kt">BatteryReading</span><span class="p">(</span><span class="nv">level</span><span class="p">:</span> <span class="mi">85</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"배터리 잔량: </span><span class="se">\(</span><span class="n">batteryReading</span><span class="o">.</span><span class="n">level</span><span class="se">)</span><span class="s">%"</span><span class="p">)</span>
+</code></pre>
+
+                        <a href="Structs/BatteryReading.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BatteryReading</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>© 2024 BluetoothKit SDK. All rights reserved.</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>
