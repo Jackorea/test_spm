@@ -379,12 +379,21 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// bluetoothKit.startRecording()
     /// ```
     public func startRecording() {
-        // 배치 수집이 설정된 센서만 기록하도록 DataRecorder에 설정
-        let hasEEG = dataCollectionConfigs.keys.contains(.eeg)
-        let hasPPG = dataCollectionConfigs.keys.contains(.ppg)
-        let hasAccel = dataCollectionConfigs.keys.contains(.accelerometer)
-        
-        dataRecorder.configureRecording(eeg: hasEEG, ppg: hasPPG, accelerometer: hasAccel)
+        // 개별 기록: 모든 센서 데이터를 기록
+        dataRecorder.setEnabledSensors(Set(SensorType.allCases))
+        dataRecorder.startRecording()
+    }
+    
+    /// 배치 설정에 따라 선택된 센서만 기록을 시작합니다.
+    ///
+    /// ## 예시
+    /// ```swift
+    /// bluetoothKit.startBatchRecording()
+    /// ```
+    public func startBatchRecording() {
+        // 배치 기록: 현재 설정된 센서만 기록
+        let enabledSensorTypes = Set(dataCollectionConfigs.keys)
+        dataRecorder.setEnabledSensors(enabledSensorTypes)
         dataRecorder.startRecording()
     }
     
@@ -673,9 +682,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveEEGData(_ reading: EEGReading) {
         latestEEGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.eeg] != nil {
-            print("📝 EEG 데이터 CSV 기록됨")
+        // 기록 중일 때는 모든 데이터를 DataRecorder로 전달 (DataRecorder에서 필터링)
+        if isRecording {
             dataRecorder.recordEEGData([reading])
         }
         
@@ -685,9 +693,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceivePPGData(_ reading: PPGReading) {
         latestPPGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.ppg] != nil {
-            print("📝 PPG 데이터 CSV 기록됨")
+        // 기록 중일 때는 모든 데이터를 DataRecorder로 전달 (DataRecorder에서 필터링)
+        if isRecording {
             dataRecorder.recordPPGData([reading])
         }
         
@@ -697,9 +704,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveAccelerometerData(_ reading: AccelerometerReading) {
         latestAccelerometerReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
-            print("📝 ACC 데이터 CSV 기록됨")
+        // 기록 중일 때는 모든 데이터를 DataRecorder로 전달 (DataRecorder에서 필터링)
+        if isRecording {
             dataRecorder.recordAccelerometerData([reading])
         }
         
@@ -709,8 +715,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveBatteryData(_ reading: BatteryReading) {
         latestBatteryReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.battery] != nil {
+        // 기록 중일 때는 모든 데이터를 DataRecorder로 전달 (DataRecorder에서 필터링)
+        if isRecording {
             dataRecorder.recordBatteryData(reading)
         }
         
