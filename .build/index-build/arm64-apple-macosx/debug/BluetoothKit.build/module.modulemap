@@ -1,0 +1,4 @@
+module BluetoothKit {
+    header "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit-Swift.h"
+    requires objc
+}

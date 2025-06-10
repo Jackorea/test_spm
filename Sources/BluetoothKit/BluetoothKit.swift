@@ -277,7 +277,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     // MARK: - Internal Properties
     
     /// 내부 연결 상태 (SDK 내부 사용만).
-    internal var connectionState: ConnectionState = .disconnected
+    public var connectionState: ConnectionState = .disconnected
     
     // MARK: - Batch Data Collection (Internal)
     

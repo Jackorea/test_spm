@@ -258,7 +258,7 @@ public struct BatteryReading: Sendable {
 /// // ❌ 잘못된 사용법 - 직접 생성하지 마세요
 /// // bluetoothKit.connectionState = .connected("FakeDevice")
 /// ```
-internal enum ConnectionState: Sendable, Equatable {
+public enum ConnectionState: Sendable, Equatable {
     /// 어떤 디바이스에도 연결되지 않은 상태입니다.
     case disconnected
     
