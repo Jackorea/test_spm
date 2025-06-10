@@ -667,7 +667,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveEEGData(_ reading: EEGReading) {
         latestEEGReading = reading
         
-        if isRecording {
+        // 배치 수집이 설정된 센서만 기록
+        if isRecording && dataCollectionConfigs[.eeg] != nil {
             dataRecorder.recordEEGData([reading])
         }
         
@@ -677,7 +678,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceivePPGData(_ reading: PPGReading) {
         latestPPGReading = reading
         
-        if isRecording {
+        // 배치 수집이 설정된 센서만 기록
+        if isRecording && dataCollectionConfigs[.ppg] != nil {
             dataRecorder.recordPPGData([reading])
         }
         
@@ -687,7 +689,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveAccelerometerData(_ reading: AccelerometerReading) {
         latestAccelerometerReading = reading
         
-        if isRecording {
+        // 배치 수집이 설정된 센서만 기록
+        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
             dataRecorder.recordAccelerometerData([reading])
         }
         
@@ -697,7 +700,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveBatteryData(_ reading: BatteryReading) {
         latestBatteryReading = reading
         
-        if isRecording {
+        // 배치 수집이 설정된 센서만 기록
+        if isRecording && dataCollectionConfigs[.battery] != nil {
             dataRecorder.recordBatteryData(reading)
         }
         
