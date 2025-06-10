@@ -1,0 +1,35 @@
+{
+  "": {
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/master.swiftdeps"
+  },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swiftdeps"
+  },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothManager.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.swiftdeps"
+  },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/DataRecorder.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.swiftdeps"
+  },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/Models.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models.swiftdeps"
+  },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/SensorDataParser.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser.swiftdeps"
+  }
+}

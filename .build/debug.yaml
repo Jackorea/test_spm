@@ -1,0 +1,47 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "BluetoothKit-arm64-apple-macosx15.0-debug.module": ["<BluetoothKit-arm64-apple-macosx15.0-debug.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<BluetoothKit-arm64-apple-macosx15.0-debug.module>"]
+  "test": ["<BluetoothKit-arm64-apple-macosx15.0-debug.module>"]
+default: "main"
+nodes:
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+commands:
+  "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothManager.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/DataRecorder.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/Models.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/SensorDataParser.swift"]
+    outputs: ["/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/sources"]
+    description: "Write auxiliary file /Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/sources"
+
+  "/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"]
+    outputs: ["/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+
+  "<BluetoothKit-arm64-apple-macosx15.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/Modules/BluetoothKit.swiftmodule"]
+    outputs: ["<BluetoothKit-arm64-apple-macosx15.0-debug.module>"]
+
+  "C.BluetoothKit-arm64-apple-macosx15.0-debug.module":
+    tool: shell
+    inputs: ["/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothManager.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/DataRecorder.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/Models.swift","/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/SensorDataParser.swift","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/sources"]
+    outputs: ["/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/Models.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/SensorDataParser.swift.o","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/Modules/BluetoothKit.swiftmodule"]
+    description: "Compiling Swift Module 'BluetoothKit' (5 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","BluetoothKit","-emit-dependencies","-emit-module","-emit-module-path","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/Modules/BluetoothKit.swiftmodule","-output-file-map","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/sources","-I","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx10.15","-enable-batch-mode","-index-store-path","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/jackahn/Desktop/test_spm/.build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit-Swift.h","-color-diagnostics","-swift-version","6","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","test_spm"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/","/Users/jackahn/Desktop/test_spm/Package.swift","/Users/jackahn/Desktop/test_spm/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+
