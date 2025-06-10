@@ -379,9 +379,13 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// bluetoothKit.startRecording()
     /// ```
     public func startRecording() {
-        // 배치 수집이 설정된 센서만 기록하도록 DataRecorder에 전달
-        let activeSensors = Set(dataCollectionConfigs.keys)
-        dataRecorder.startRecording(for: activeSensors)
+        // 배치 수집이 설정된 센서만 기록하도록 DataRecorder에 설정
+        let hasEEG = dataCollectionConfigs.keys.contains(.eeg)
+        let hasPPG = dataCollectionConfigs.keys.contains(.ppg)
+        let hasAccel = dataCollectionConfigs.keys.contains(.accelerometer)
+        
+        dataRecorder.configureRecording(eeg: hasEEG, ppg: hasPPG, accelerometer: hasAccel)
+        dataRecorder.startRecording()
     }
     
     /// 센서 데이터 기록을 중지합니다.
