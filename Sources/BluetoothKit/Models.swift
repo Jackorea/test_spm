@@ -788,20 +788,12 @@ internal struct DataCollectionConfig {
     
     init(sensorType: SensorType, sampleCount: Int) {
         self.sensorType = sensorType
-        self.targetSampleCount = max(1, min(sampleCount, Self.maxSampleCount(for: sensorType)))
+        self.targetSampleCount = max(1, sampleCount)  // 최소 1개만 보장
     }
     
     init(sensorType: SensorType, timeInterval: TimeInterval) {
         self.sensorType = sensorType
-        let clampedInterval = max(Self.minTimeInterval, min(timeInterval, Self.maxTimeInterval))
-        let sampleCount = Int(clampedInterval * sensorType.sampleRate)
+        let sampleCount = Int(max(0.001, timeInterval) * sensorType.sampleRate)  // 최소 1ms
         self.targetSampleCount = max(1, sampleCount)
-    }
-    
-    static let minTimeInterval: TimeInterval = 0.04    // 25ms (40Hz)
-    static let maxTimeInterval: TimeInterval = 10.0    // 10초
-    
-    static func maxSampleCount(for sensorType: SensorType) -> Int {
-        return Int(maxTimeInterval * sensorType.sampleRate)
     }
 } 
