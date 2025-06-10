@@ -379,7 +379,9 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// bluetoothKit.startRecording()
     /// ```
     public func startRecording() {
-        dataRecorder.startRecording()
+        // 배치 수집이 설정된 센서만 기록하도록 DataRecorder에 전달
+        let activeSensors = Set(dataCollectionConfigs.keys)
+        dataRecorder.startRecording(for: activeSensors)
     }
     
     /// 센서 데이터 기록을 중지합니다.
@@ -669,10 +671,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.eeg] != nil {
-            print("📝 EEG 데이터 CSV 기록됨 (배치 수집 설정 있음)")
+            print("📝 EEG 데이터 CSV 기록됨")
             dataRecorder.recordEEGData([reading])
-        } else if isRecording {
-            print("❌ EEG 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToEEGBuffer(reading)
@@ -683,10 +683,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.ppg] != nil {
-            print("📝 PPG 데이터 CSV 기록됨 (배치 수집 설정 있음)")
+            print("📝 PPG 데이터 CSV 기록됨")
             dataRecorder.recordPPGData([reading])
-        } else if isRecording {
-            print("❌ PPG 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToPPGBuffer(reading)
@@ -697,10 +695,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.accelerometer] != nil {
-            print("📝 ACC 데이터 CSV 기록됨 (배치 수집 설정 있음)")
+            print("📝 ACC 데이터 CSV 기록됨")
             dataRecorder.recordAccelerometerData([reading])
-        } else if isRecording {
-            print("❌ ACC 데이터 CSV 기록 안됨 (배치 수집 설정 없음)")
         }
         
         addToAccelerometerBuffer(reading)
