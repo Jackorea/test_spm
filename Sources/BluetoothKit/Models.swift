@@ -140,6 +140,11 @@ public struct PPGReading: Sendable {
     /// 데이터가 측정된 시간입니다.
     public let timestamp: Date
     
+    /// 적외선 LED 측정값에 대한 별칭 (ir과 동일한 값을 반환)
+    public var infrared: Int {
+        return ir
+    }
+    
     /// 새로운 PPGReading 인스턴스를 생성합니다.
     ///
     /// - Parameters:
@@ -220,6 +225,11 @@ public struct BatteryReading: Sendable {
     
     /// 데이터가 측정된 시간입니다.
     public let timestamp: Date
+    
+    /// 배터리 잔량 백분율 (level과 동일한 값을 Double로 반환)
+    public var percentage: Double {
+        return Double(level)
+    }
     
     /// 새로운 BatteryReading 인스턴스를 생성합니다.
     ///
@@ -727,6 +737,11 @@ public enum SensorType: String, CaseIterable, Sendable {
         case .accelerometer: return 30.0
         case .battery: return 1.0 / 60.0  // 1분마다
         }
+    }
+    
+    /// 센서 타입의 설명 문자열을 반환합니다.
+    public var description: String {
+        return self.rawValue
     }
 }
 
