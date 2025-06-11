@@ -2,6 +2,12 @@
   "": {
     "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/master.swiftdeps"
   },
+  "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BatchDataConfigurationManager.swift": {
+    "dependencies": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BatchDataConfigurationManager.d",
+    "object": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BatchDataConfigurationManager.swift.o",
+    "swiftmodule": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BatchDataConfigurationManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BatchDataConfigurationManager.swiftdeps"
+  },
   "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift": {
     "dependencies": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.d",
     "object": "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swift.o",
