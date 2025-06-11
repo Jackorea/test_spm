@@ -381,7 +381,6 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     public func startRecording() {
         // 현재 설정된 센서 타입들만 기록하도록 전달
         let selectedSensors = Set(dataCollectionConfigs.keys)
-        print("🚀 BluetoothKit: 기록 시작 요청 - 선택된 센서: \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
         dataRecorder.startRecording(with: selectedSensors)
     }
     
@@ -514,6 +513,36 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         clearBuffer(for: sensorType)
     }
     
+    /// 배치 데이터 수집을 설정합니다 (새로운 config 기반 API).
+    ///
+    /// BatchDataCollectionConfig를 사용하여 센서별 배치 데이터 수집을 설정합니다.
+    /// 앱에서 MVVM 패턴으로 설정을 관리할 때 사용하는 권장 방법입니다.
+    ///
+    /// - Parameter config: 배치 데이터 수집 설정
+    ///
+    /// ## 예시
+    ///
+    /// ```swift
+    /// // 샘플 수 기반 설정
+    /// let eegConfig = BatchDataCollectionConfig(
+    ///     sensorType: .eeg,
+    ///     targetSampleCount: 250
+    /// )
+    /// bluetoothKit.configureBatchDataCollection(config: eegConfig)
+    ///
+    /// // 시간 기반 설정
+    /// let ppgConfig = BatchDataCollectionConfig(
+    ///     sensorType: .ppg,
+    ///     targetDurationSeconds: 2
+    /// )
+    /// bluetoothKit.configureBatchDataCollection(config: ppgConfig)
+    /// ```
+    public func configureBatchDataCollection(config: BatchDataCollectionConfig) {
+        let internalConfig = config.internalConfig
+        dataCollectionConfigs[config.sensorType] = internalConfig
+        clearBuffer(for: config.sensorType)
+    }
+    
     /// 특정 센서의 배치 데이터 수집을 비활성화합니다.
     ///
     /// 해당 센서는 기본 동작(latest* 프로퍼티 업데이트)만 수행하고
@@ -639,16 +668,6 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     private func updateRecordedFiles() {
         recordedFiles = dataRecorder.getRecordedFiles()
-    }
-    
-    /// 센서 타입을 문자열로 변환하는 헬퍼 메서드
-    private func sensorTypeToString(_ sensorType: SensorType) -> String {
-        switch sensorType {
-        case .eeg: return "EEG"
-        case .ppg: return "PPG"
-        case .accelerometer: return "ACC"
-        case .battery: return "배터리"
-        }
     }
 }
 

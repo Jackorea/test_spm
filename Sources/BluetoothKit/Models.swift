@@ -730,6 +730,74 @@ public enum SensorType: String, CaseIterable, Sendable {
     }
 }
 
+/// 배치 데이터 수집 설정을 나타내는 공개 구조체입니다.
+///
+/// 앱에서 센서별로 배치 데이터 수집 방식을 설정할 때 사용합니다.
+/// 샘플 수 기반 또는 시간 기반 수집 모드를 지원합니다.
+///
+/// ## 예시
+///
+/// ```swift
+/// // 샘플 수 기반 설정
+/// let eegConfig = BatchDataCollectionConfig(
+///     sensorType: .eeg,
+///     targetSampleCount: 250
+/// )
+///
+/// // 시간 기반 설정
+/// let ppgConfig = BatchDataCollectionConfig(
+///     sensorType: .ppg,
+///     targetDurationSeconds: 2
+/// )
+///
+/// bluetoothKit.configureBatchDataCollection(config: eegConfig)
+/// bluetoothKit.configureBatchDataCollection(config: ppgConfig)
+/// ```
+public struct BatchDataCollectionConfig: Sendable {
+    /// 설정할 센서 타입
+    public let sensorType: SensorType
+    
+    /// 목표 샘플 수 (샘플 수 기반 모드)
+    public let targetSampleCount: Int?
+    
+    /// 목표 시간 (초 단위, 시간 기반 모드)
+    public let targetDurationSeconds: Int?
+    
+    /// 샘플 수 기반 배치 수집 설정을 생성합니다.
+    ///
+    /// - Parameters:
+    ///   - sensorType: 설정할 센서 타입
+    ///   - targetSampleCount: 배치당 목표 샘플 수 (1 이상)
+    public init(sensorType: SensorType, targetSampleCount: Int) {
+        self.sensorType = sensorType
+        self.targetSampleCount = max(1, targetSampleCount)
+        self.targetDurationSeconds = nil
+    }
+    
+    /// 시간 기반 배치 수집 설정을 생성합니다.
+    ///
+    /// - Parameters:
+    ///   - sensorType: 설정할 센서 타입
+    ///   - targetDurationSeconds: 배치당 목표 시간 (초 단위, 1 이상)
+    public init(sensorType: SensorType, targetDurationSeconds: Int) {
+        self.sensorType = sensorType
+        self.targetSampleCount = nil
+        self.targetDurationSeconds = max(1, targetDurationSeconds)
+    }
+    
+    /// 내부 DataCollectionConfig로 변환합니다.
+    internal var internalConfig: DataCollectionConfig {
+        if let sampleCount = targetSampleCount {
+            return DataCollectionConfig(sensorType: sensorType, sampleCount: sampleCount)
+        } else if let duration = targetDurationSeconds {
+            return DataCollectionConfig(sensorType: sensorType, timeInterval: TimeInterval(duration))
+        } else {
+            // 기본값: 1초
+            return DataCollectionConfig(sensorType: sensorType, timeInterval: 1.0)
+        }
+    }
+}
+
 /// 배치 단위로 센서 데이터를 수신하는 델리게이트 프로토콜입니다.
 ///
 /// 사용자가 설정한 시간 간격이나 샘플 개수에 따라 센서 데이터를 배치로 받을 수 있습니다.
