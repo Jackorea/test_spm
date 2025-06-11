@@ -728,73 +728,45 @@ public enum SensorType: String, CaseIterable, Sendable {
         case .battery: return 1.0 / 60.0  // 1분마다
         }
     }
-}
-
-/// 배치 데이터 수집 설정을 나타내는 공개 구조체입니다.
-///
-/// 앱에서 센서별로 배치 데이터 수집 방식을 설정할 때 사용합니다.
-/// 샘플 수 기반 또는 시간 기반 수집 모드를 지원합니다.
-///
-/// ## 예시
-///
-/// ```swift
-/// // 샘플 수 기반 설정
-/// let eegConfig = BatchDataCollectionConfig(
-///     sensorType: .eeg,
-///     targetSampleCount: 250
-/// )
-///
-/// // 시간 기반 설정
-/// let ppgConfig = BatchDataCollectionConfig(
-///     sensorType: .ppg,
-///     targetDurationSeconds: 2
-/// )
-///
-/// bluetoothKit.configureBatchDataCollection(config: eegConfig)
-/// bluetoothKit.configureBatchDataCollection(config: ppgConfig)
-/// ```
-public struct BatchDataCollectionConfig: Sendable {
-    /// 설정할 센서 타입
-    public let sensorType: SensorType
     
-    /// 목표 샘플 수 (샘플 수 기반 모드)
-    public let targetSampleCount: Int?
-    
-    /// 목표 시간 (초 단위, 시간 기반 모드)
-    public let targetDurationSeconds: Int?
-    
-    /// 샘플 수 기반 배치 수집 설정을 생성합니다.
-    ///
-    /// - Parameters:
-    ///   - sensorType: 설정할 센서 타입
-    ///   - targetSampleCount: 배치당 목표 샘플 수 (1 이상)
-    public init(sensorType: SensorType, targetSampleCount: Int) {
-        self.sensorType = sensorType
-        self.targetSampleCount = max(1, targetSampleCount)
-        self.targetDurationSeconds = nil
-    }
-    
-    /// 시간 기반 배치 수집 설정을 생성합니다.
-    ///
-    /// - Parameters:
-    ///   - sensorType: 설정할 센서 타입
-    ///   - targetDurationSeconds: 배치당 목표 시간 (초 단위, 1 이상)
-    public init(sensorType: SensorType, targetDurationSeconds: Int) {
-        self.sensorType = sensorType
-        self.targetSampleCount = nil
-        self.targetDurationSeconds = max(1, targetDurationSeconds)
-    }
-    
-    /// 내부 DataCollectionConfig로 변환합니다.
-    internal var internalConfig: DataCollectionConfig {
-        if let sampleCount = targetSampleCount {
-            return DataCollectionConfig(sensorType: sensorType, sampleCount: sampleCount)
-        } else if let duration = targetDurationSeconds {
-            return DataCollectionConfig(sensorType: sensorType, timeInterval: TimeInterval(duration))
-        } else {
-            // 기본값: 1초
-            return DataCollectionConfig(sensorType: sensorType, timeInterval: 1.0)
+    /// UI에서 표시하기 위한 짧은 이름을 반환합니다.
+    public var displayName: String {
+        switch self {
+        case .eeg: return "EEG"
+        case .ppg: return "PPG"
+        case .accelerometer: return "ACC"
+        case .battery: return "배터리"
         }
+    }
+    
+    /// UI에서 표시하기 위한 이모지를 반환합니다.
+    public var emoji: String {
+        switch self {
+        case .eeg: return "🧠"
+        case .ppg: return "❤️"
+        case .accelerometer: return "🏃"
+        case .battery: return "🔋"
+        }
+    }
+    
+    /// UI에서 표시하기 위한 색상을 반환합니다.
+    public var color: String {
+        switch self {
+        case .eeg: return "blue"
+        case .ppg: return "red"
+        case .accelerometer: return "green"
+        case .battery: return "orange"
+        }
+    }
+    
+    /// 주어진 샘플 수에 대한 예상 시간을 계산합니다.
+    public func expectedTime(for sampleCount: Int) -> Double {
+        return Double(sampleCount) / sampleRate
+    }
+    
+    /// 주어진 시간에 대한 예상 샘플 수를 계산합니다.
+    public func expectedSamples(for duration: TimeInterval) -> Int {
+        return Int(duration * sampleRate)
     }
 }
 
