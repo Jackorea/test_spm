@@ -730,7 +730,7 @@ public enum SensorType: String, CaseIterable, Sendable {
     case battery = "Battery"
     
     /// 각 센서의 샘플링 레이트를 반환합니다.
-    internal var sampleRate: Double {
+    public var sampleRate: Double {
         switch self {
         case .eeg: return 250.0
         case .ppg: return 50.0
