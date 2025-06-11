@@ -66,6 +66,10 @@ public class BatchDataConfigurationManager {
     @Published public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
     @Published public var isConfigured = false
     
+    // 경고 팝업 관련 상태
+    @Published public var showRecordingChangeWarning = false
+    @Published public var pendingSensorSelection: Set<SensorType>?
+    
     /// 센서별 설정을 관리하는 Dictionary
     @Published private var sensorConfigurations: [SensorType: SensorConfiguration] = [:]
     
@@ -104,6 +108,47 @@ public class BatchDataConfigurationManager {
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
+        // 기록 중이라면 경고 후 사용자 선택 요청
+        if isConfigured && self.bluetoothKit.isRecording {
+            print("⚠️ 기록 중 센서 선택 변경 시도 감지")
+            // UI에 경고 팝업 표시 요청
+            self.pendingSensorSelection = sensors
+            self.showRecordingChangeWarning = true
+            return
+        }
+        
+        // 기록 중이 아니라면 즉시 적용
+        self.applySensorSelection(sensors)
+    }
+    
+    /// 사용자가 경고 팝업에서 "기록 중지 후 변경"을 선택했을 때 호출
+    public func confirmSensorChangeWithRecordingStop() {
+        guard let pendingSelection = self.pendingSensorSelection else { return }
+        
+        print("✅ 사용자 확인: 기록 중지 후 센서 선택 변경")
+        
+        // 기록 중지
+        self.bluetoothKit.stopRecording()
+        
+        // 센서 선택 적용
+        self.applySensorSelection(pendingSelection)
+        
+        // 임시 저장 정리
+        self.pendingSensorSelection = nil
+        self.showRecordingChangeWarning = false
+    }
+    
+    /// 사용자가 경고 팝업에서 "취소"를 선택했을 때 호출
+    public func cancelSensorChange() {
+        print("❌ 사용자 취소: 센서 선택 변경 취소")
+        
+        // 임시 저장 정리
+        self.pendingSensorSelection = nil
+        self.showRecordingChangeWarning = false
+    }
+    
+    /// 실제 센서 선택 적용 로직
+    private func applySensorSelection(_ sensors: Set<SensorType>) {
         self.selectedSensors = sensors
         print("🔄 센서 선택 업데이트: \(sensors.map { $0.displayName }.joined(separator: ", "))")
         
@@ -345,27 +390,16 @@ public class BatchDataConfigurationManager {
     
     /// 센서 선택 변경에 따라 BluetoothKit의 데이터 수집을 재설정합니다.
     private func reconfigureSensorsForSelection() {
-        print("🔧 센서 데이터 수집 재설정 중...")
-        
-        // 모든 센서에 대해 선택 상태에 따라 설정/해제
         for sensorType in SensorType.allCases {
             if self.selectedSensors.contains(sensorType) {
-                // 선택된 센서: 데이터 수집 활성화
+                // 선택된 센서: 데이터 수집 재활성화
                 self.configureSensor(sensorType, isInitial: false)
-                print("✅ \(sensorType.displayName) 데이터 수집 재활성화")
+                print("✅ 재활성화: \(sensorType.displayName) - 데이터 수집 재개")
             } else {
                 // 선택 해제된 센서: 데이터 수집 비활성화
                 self.bluetoothKit.disableDataCollection(for: sensorType)
-                print("❌ \(sensorType.displayName) 데이터 수집 비활성화")
+                print("🚫 비활성화: \(sensorType.displayName) - 데이터 수집 중지")
             }
         }
-        
-        // 기록 중이라면 기록 센서도 업데이트
-        if self.bluetoothKit.isRecording {
-            self.bluetoothKit.updateRecordingSensors()
-            print("📝 기록 센서 목록 업데이트 완료")
-        }
-        
-        print("✅ 센서 데이터 수집 재설정 완료")
     }
 } 
