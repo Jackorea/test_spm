@@ -381,6 +381,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     public func startRecording() {
         // 현재 설정된 센서 타입들만 기록하도록 전달
         let selectedSensors = Set(dataCollectionConfigs.keys)
+        print("🚀 BluetoothKit: 기록 시작 요청 - 선택된 센서: \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
         dataRecorder.startRecording(with: selectedSensors)
     }
     
@@ -638,6 +639,16 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     private func updateRecordedFiles() {
         recordedFiles = dataRecorder.getRecordedFiles()
+    }
+    
+    /// 센서 타입을 문자열로 변환하는 헬퍼 메서드
+    private func sensorTypeToString(_ sensorType: SensorType) -> String {
+        switch sensorType {
+        case .eeg: return "EEG"
+        case .ppg: return "PPG"
+        case .accelerometer: return "ACC"
+        case .battery: return "배터리"
+        }
     }
 }
 

@@ -87,6 +87,13 @@ internal class DataRecorder: @unchecked Sendable {
         
         // 선택된 센서 타입들 저장
         selectedSensorTypes = selectedSensors
+        print("🎯 DataRecorder: 기록 시작 - 선택된 센서: \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
+        
+        // 이전 writer들을 명시적으로 정리
+        eegCsvWriter = nil
+        ppgCsvWriter = nil
+        accelCsvWriter = nil
+        rawDataWriter = nil
         
         do {
             try setupRecordingFiles()
@@ -150,8 +157,8 @@ internal class DataRecorder: @unchecked Sendable {
     public func recordEEGData(_ readings: [EEGReading]) {
         guard isRecording else { return }
         
-        // EEG가 선택된 센서에 포함되어 있고 writer가 존재할 때만 기록
-        guard selectedSensorTypes.contains(.eeg), let writer = eegCsvWriter else { return }
+        // EEG가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.eeg) else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -160,9 +167,11 @@ internal class DataRecorder: @unchecked Sendable {
             appendToRawDataDict("eegLeadOff", value: reading.leadOff ? 1 : 0)
             
             // Write to CSV
-            let timestamp = reading.timestamp.timeIntervalSince1970
-            let line = "\(timestamp),\(reading.ch1Raw),\(reading.ch2Raw),\(reading.channel1),\(reading.channel2),\(reading.leadOff ? 1 : 0)\n"
-            writer.write(line)
+            if let writer = eegCsvWriter {
+                let timestamp = reading.timestamp.timeIntervalSince1970
+                let line = "\(timestamp),\(reading.ch1Raw),\(reading.ch2Raw),\(reading.channel1),\(reading.channel2),\(reading.leadOff ? 1 : 0)\n"
+                writer.write(line)
+            }
         }
     }
     
@@ -172,8 +181,8 @@ internal class DataRecorder: @unchecked Sendable {
     public func recordPPGData(_ readings: [PPGReading]) {
         guard isRecording else { return }
         
-        // PPG가 선택된 센서에 포함되어 있고 writer가 존재할 때만 기록
-        guard selectedSensorTypes.contains(.ppg), let writer = ppgCsvWriter else { return }
+        // PPG가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.ppg) else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -181,9 +190,11 @@ internal class DataRecorder: @unchecked Sendable {
             appendToRawDataDict("ppgIr", value: reading.ir)
             
             // Write to CSV
-            let timestamp = reading.timestamp.timeIntervalSince1970
-            let line = "\(timestamp),\(reading.red),\(reading.ir)\n"
-            writer.write(line)
+            if let writer = ppgCsvWriter {
+                let timestamp = reading.timestamp.timeIntervalSince1970
+                let line = "\(timestamp),\(reading.red),\(reading.ir)\n"
+                writer.write(line)
+            }
         }
     }
     
@@ -193,8 +204,8 @@ internal class DataRecorder: @unchecked Sendable {
     public func recordAccelerometerData(_ readings: [AccelerometerReading]) {
         guard isRecording else { return }
         
-        // 가속도계가 선택된 센서에 포함되어 있고 writer가 존재할 때만 기록
-        guard selectedSensorTypes.contains(.accelerometer), let writer = accelCsvWriter else { return }
+        // 가속도계가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.accelerometer) else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -203,9 +214,11 @@ internal class DataRecorder: @unchecked Sendable {
             appendToRawDataDict("accelZ", value: Int(reading.z))
             
             // Write to CSV
-            let timestamp = reading.timestamp.timeIntervalSince1970
-            let line = "\(timestamp),\(reading.x),\(reading.y),\(reading.z)\n"
-            writer.write(line)
+            if let writer = accelCsvWriter {
+                let timestamp = reading.timestamp.timeIntervalSince1970
+                let line = "\(timestamp),\(reading.x),\(reading.y),\(reading.z)\n"
+                writer.write(line)
+            }
         }
     }
     
@@ -241,15 +254,10 @@ internal class DataRecorder: @unchecked Sendable {
         
         currentRecordingFiles = []
         
-        // 모든 writer를 먼저 nil로 초기화
-        rawDataWriter = nil
-        eegCsvWriter = nil
-        ppgCsvWriter = nil
-        accelCsvWriter = nil
-        
         // Setup JSON file
         let rawDataURL = recordingsDirectory.appendingPathComponent("raw_data_\(timestampString).json")
         try setupJSONFile(at: rawDataURL)
+        print("📁 DataRecorder: JSON 파일 생성 - \(rawDataURL.lastPathComponent)")
         
         // Setup CSV files - 선택된 센서만 생성
         let csvTimestampString = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
@@ -257,30 +265,28 @@ internal class DataRecorder: @unchecked Sendable {
             .replacingOccurrences(of: ":", with: "-")
             .replacingOccurrences(of: "/", with: "-")
         
-        print("🔧 파일 생성: 선택된 센서 - \(selectedSensorTypes.map { sensorTypeToString($0) }.joined(separator: ", "))")
-        
         // EEG가 선택된 경우에만 EEG CSV 파일 생성
         if selectedSensorTypes.contains(.eeg) {
             try setupEEGCSVFile(timestamp: csvTimestampString)
-            print("   ✅ EEG CSV 파일 생성됨")
+            print("📁 DataRecorder: EEG CSV 파일 생성 - eeg_data_\(csvTimestampString).csv")
         } else {
-            print("   ❌ EEG 선택되지 않음 - CSV 파일 생성 안함")
+            print("⚪ DataRecorder: EEG 미선택 - CSV 파일 생성 안함")
         }
         
         // PPG가 선택된 경우에만 PPG CSV 파일 생성
         if selectedSensorTypes.contains(.ppg) {
             try setupPPGCSVFile(timestamp: csvTimestampString)
-            print("   ✅ PPG CSV 파일 생성됨")
+            print("📁 DataRecorder: PPG CSV 파일 생성 - ppg_data_\(csvTimestampString).csv")
         } else {
-            print("   ❌ PPG 선택되지 않음 - CSV 파일 생성 안함")
+            print("⚪ DataRecorder: PPG 미선택 - CSV 파일 생성 안함")
         }
         
         // 가속도계가 선택된 경우에만 가속도계 CSV 파일 생성
         if selectedSensorTypes.contains(.accelerometer) {
             try setupAccelCSVFile(timestamp: csvTimestampString)
-            print("   ✅ ACC CSV 파일 생성됨")
+            print("📁 DataRecorder: ACC CSV 파일 생성 - accel_data_\(csvTimestampString).csv")
         } else {
-            print("   ❌ ACC 선택되지 않음 - CSV 파일 생성 안함")
+            print("⚪ DataRecorder: ACC 미선택 - CSV 파일 생성 안함")
         }
         
         initializeRawDataDict()
