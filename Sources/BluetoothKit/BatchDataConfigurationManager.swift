@@ -106,6 +106,12 @@ public class BatchDataConfigurationManager {
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
         self.selectedSensors = sensors
         print("🔄 센서 선택 업데이트: \(sensors.map { $0.displayName }.joined(separator: ", "))")
+        
+        // 즉시 BatchDataConsoleLogger에 센서 선택 변경사항 반영
+        if isConfigured {
+            self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
+            print("📝 콘솔 출력 센서 즉시 업데이트: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+        }
     }
     
     public func updateCollectionMode(_ mode: CollectionMode) {
