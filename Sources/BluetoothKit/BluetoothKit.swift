@@ -537,11 +537,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// )
     /// bluetoothKit.configureBatchDataCollection(config: ppgConfig)
     /// ```
-    public func configureBatchDataCollection(config: BatchDataCollectionConfig) {
-        let internalConfig = config.internalConfig
-        dataCollectionConfigs[config.sensorType] = internalConfig
-        clearBuffer(for: config.sensorType)
-    }
+
     
     /// 특정 센서의 배치 데이터 수집을 비활성화합니다.
     ///
