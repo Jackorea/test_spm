@@ -64,7 +64,7 @@ public class BatchDataConfigurationManager {
     
     @Published public var selectedCollectionMode: CollectionMode = .sampleCount
     @Published public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
-    @Published public var isConfigured = false
+    @Published public var isMonitoringActive = false  // 설정 완료 → 모니터링 활성화로 변경
     
     // 경고 팝업 관련 상태
     @Published public var showRecordingChangeWarning = false
@@ -89,27 +89,27 @@ public class BatchDataConfigurationManager {
     
     // MARK: - Public Configuration Methods
     
-    public func applyInitialConfiguration() {
+    public func startMonitoring() {
         guard !self.selectedSensors.isEmpty else { return }
         
         self.setupBatchDelegate()
         self.configureAllSensors()
-        self.isConfigured = true
-        print("✅ 배치 데이터 수집 설정 완료 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+        self.isMonitoringActive = true
+        print("✅ 센서 모니터링 시작 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
-    public func removeConfiguration() {
+    public func stopMonitoring() {
         self.bluetoothKit.disableAllDataCollection()
         self.batchDelegate?.updateSelectedSensors(Set<SensorType>())
         self.bluetoothKit.batchDataDelegate = nil
         self.batchDelegate = nil
-        self.isConfigured = false
-        print("❌ 배치 데이터 수집 설정 해제")
+        self.isMonitoringActive = false
+        print("❌ 센서 모니터링 중지")
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
         // 기록 중이라면 경고 후 사용자 선택 요청
-        if isConfigured && self.bluetoothKit.isRecording {
+        if isMonitoringActive && self.bluetoothKit.isRecording {
             print("⚠️ 기록 중 센서 선택 변경 시도 감지")
             // UI에 경고 팝업 표시 요청
             self.pendingSensorSelection = sensors
@@ -153,7 +153,7 @@ public class BatchDataConfigurationManager {
         print("🔄 센서 선택 업데이트: \(sensors.map { $0.displayName }.joined(separator: ", "))")
         
         // 즉시 BatchDataConsoleLogger에 센서 선택 변경사항 반영
-        if isConfigured {
+        if isMonitoringActive {
             self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
             print("📝 콘솔 출력 센서 즉시 업데이트: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
             
@@ -276,7 +276,7 @@ public class BatchDataConfigurationManager {
         )
         .dropFirst() // 초기값 무시
         .sink { [weak self] _, _ in
-            if self?.isConfigured == true {
+            if self?.isMonitoringActive == true {
                 self?.applyChanges()
             }
         }
