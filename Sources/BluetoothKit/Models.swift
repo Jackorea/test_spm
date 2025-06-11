@@ -140,11 +140,6 @@ public struct PPGReading: Sendable {
     /// 데이터가 측정된 시간입니다.
     public let timestamp: Date
     
-    /// 적외선 LED 측정값에 대한 별칭 (ir과 동일한 값을 반환)
-    public var infrared: Int {
-        return ir
-    }
-    
     /// 새로운 PPGReading 인스턴스를 생성합니다.
     ///
     /// - Parameters:
@@ -225,11 +220,6 @@ public struct BatteryReading: Sendable {
     
     /// 데이터가 측정된 시간입니다.
     public let timestamp: Date
-    
-    /// 배터리 잔량 백분율 (level과 동일한 값을 Double로 반환)
-    public var percentage: Double {
-        return Double(level)
-    }
     
     /// 새로운 BatteryReading 인스턴스를 생성합니다.
     ///
@@ -738,11 +728,6 @@ public enum SensorType: String, CaseIterable, Sendable {
         case .battery: return 1.0 / 60.0  // 1분마다
         }
     }
-    
-    /// 센서 타입의 설명 문자열을 반환합니다.
-    public var description: String {
-        return self.rawValue
-    }
 }
 
 /// 배치 단위로 센서 데이터를 수신하는 델리게이트 프로토콜입니다.
@@ -810,5 +795,114 @@ internal struct DataCollectionConfig {
         self.sensorType = sensorType
         let sampleCount = Int(max(0.001, timeInterval) * sensorType.sampleRate)  // 최소 1ms
         self.targetSampleCount = max(1, sampleCount)
+    }
+}
+
+// MARK: - Default Console Logger Implementation
+
+/// 배치 센서 데이터를 콘솔에 출력하는 기본 구현체입니다.
+///
+/// SDK 사용자가 빠르게 데이터 모니터링을 시작할 수 있도록 제공되는 유틸리티 클래스입니다.
+/// 실제 프로덕션에서는 이를 참고하여 커스텀 델리게이트를 구현하는 것을 권장합니다.
+///
+/// ## 사용 예시
+///
+/// ```swift
+/// let bluetoothKit = BluetoothKit()
+/// let consoleLogger = BatchDataConsoleLogger()
+/// 
+/// // 선택된 센서만 콘솔에 출력하도록 설정
+/// consoleLogger.updateSelectedSensors([.eeg, .ppg])
+/// bluetoothKit.batchDataDelegate = consoleLogger
+/// 
+/// // 배치 데이터 수집 설정
+/// bluetoothKit.setDataCollection(sampleCount: 100, for: .eeg)
+/// ```
+public class BatchDataConsoleLogger: SensorBatchDataDelegate {
+    private var batchCount: [String: Int] = [:]
+    private let startTime = Date()
+    private var selectedSensors: Set<SensorType> = []
+    
+    /// 새로운 BatchDataConsoleLogger 인스턴스를 생성합니다.
+    public init() {}
+    
+    /// 선택된 센서를 업데이트하는 메서드
+    ///
+    /// 설정된 센서의 데이터만 콘솔에 출력됩니다.
+    /// 빈 세트를 전달하면 모든 출력이 중지됩니다.
+    ///
+    /// - Parameter sensors: 콘솔에 출력할 센서 타입들의 집합
+    public func updateSelectedSensors(_ sensors: Set<SensorType>) {
+        selectedSensors = sensors
+        print("📝 콘솔 출력 설정 업데이트: \(sensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
+    }
+    
+    private func sensorTypeToString(_ sensorType: SensorType) -> String {
+        switch sensorType {
+        case .eeg: return "EEG"
+        case .ppg: return "PPG"
+        case .accelerometer: return "ACC"
+        case .battery: return "배터리"
+        }
+    }
+    
+    public func didReceiveEEGBatch(_ readings: [EEGReading]) {
+        // EEG가 선택된 센서에 포함되어 있을 때만 출력
+        guard selectedSensors.contains(.eeg) else { return }
+        
+        let count = (batchCount["EEG"] ?? 0) + 1
+        batchCount["EEG"] = count
+        let elapsed = Date().timeIntervalSince(startTime)
+        
+        print("🧠 EEG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
+        
+        // 모든 EEG 샘플 출력
+        for (index, reading) in readings.enumerated() {
+            print("   📊 샘플 #\(index + 1): CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV")
+        }
+        print("") // 배치 간 구분을 위한 빈 줄
+    }
+    
+    public func didReceivePPGBatch(_ readings: [PPGReading]) {
+        // PPG가 선택된 센서에 포함되어 있을 때만 출력
+        guard selectedSensors.contains(.ppg) else { return }
+        
+        let count = (batchCount["PPG"] ?? 0) + 1
+        batchCount["PPG"] = count
+        let elapsed = Date().timeIntervalSince(startTime)
+        
+        print("❤️ PPG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
+        
+        // 모든 PPG 샘플 출력
+        for (index, reading) in readings.enumerated() {
+            print("   📊 샘플 #\(index + 1): RED=\(reading.red), IR=\(reading.ir)")
+        }
+        print("") // 배치 간 구분을 위한 빈 줄
+    }
+    
+    public func didReceiveAccelerometerBatch(_ readings: [AccelerometerReading]) {
+        // 가속도계가 선택된 센서에 포함되어 있을 때만 출력
+        guard selectedSensors.contains(.accelerometer) else { return }
+        
+        let count = (batchCount["ACCEL"] ?? 0) + 1
+        batchCount["ACCEL"] = count
+        let elapsed = Date().timeIntervalSince(startTime)
+        
+        print("🏃 ACC 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
+        
+        // 모든 ACC 샘플 출력
+        for (index, reading) in readings.enumerated() {
+            print("   📊 샘플 #\(index + 1): X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+        }
+        print("") // 배치 간 구분을 위한 빈 줄
+    }
+    
+    public func didReceiveBatteryUpdate(_ reading: BatteryReading) {
+        // 배터리가 선택된 센서에 포함되어 있을 때만 출력
+        guard selectedSensors.contains(.battery) else { return }
+        
+        let elapsed = Date().timeIntervalSince(startTime)
+        print("🔋 배터리 업데이트 - \(reading.level)% (경과: \(String(format: "%.1f", elapsed))초)")
+        print("") // 다른 로그와 구분을 위한 빈 줄
     }
 } 
