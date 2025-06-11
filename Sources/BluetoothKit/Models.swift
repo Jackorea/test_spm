@@ -861,7 +861,23 @@ internal struct DataCollectionConfig {
 public class BatchDataConsoleLogger: SensorBatchDataDelegate {
     private var batchCount: [String: Int] = [:]
     private let startTime = Date()
-    private var selectedSensors: Set<SensorType> = []
+    private var _selectedSensors: Set<SensorType> = []
+    
+    // Thread-safe access to selectedSensors using concurrent queue
+    private let sensorAccessQueue = DispatchQueue(label: "com.bluetoothkit.sensorsAccess", attributes: .concurrent)
+    
+    private var selectedSensors: Set<SensorType> {
+        get {
+            return sensorAccessQueue.sync {
+                return _selectedSensors
+            }
+        }
+        set {
+            sensorAccessQueue.async(flags: .barrier) {
+                self._selectedSensors = newValue
+            }
+        }
+    }
     
     /// 새로운 BatchDataConsoleLogger 인스턴스를 생성합니다.
     public init() {}
