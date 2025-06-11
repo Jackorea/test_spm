@@ -914,7 +914,7 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         
         // 모든 EEG 샘플 출력 (순서: ch1raw, ch2raw, ch1, ch2, leadOff)
         for (index, reading) in readings.enumerated() {
-            print("   📊 샘플 #\(index + 1): CH1_RAW=\(reading.ch1Raw), CH2_RAW=\(reading.ch2Raw), CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV, LEAD_OFF=\(reading.leadOff ? "접촉안됨" : "접촉됨")")
+            print("   📊 샘플 #\(index + 1): CH1_RAW=\(reading.ch1Raw), CH2_RAW=\(reading.ch2Raw), CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV, LEAD_OFF=\(reading.leadOff ? 1 : 0)")
         }
         print("") // 배치 간 구분을 위한 빈 줄
     }

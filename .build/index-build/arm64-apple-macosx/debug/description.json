@@ -24,6 +24,10 @@
       "inputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BatchDataConfigurationManager.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift"
         },
         {
@@ -55,6 +59,7 @@
       "moduleName" : "BluetoothKit",
       "moduleOutputPath" : "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/Modules/BluetoothKit.swiftmodule",
       "objects" : [
+        "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BatchDataConfigurationManager.swift.o",
         "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothKit.swift.o",
         "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/BluetoothManager.swift.o",
         "/Users/jackahn/Desktop/test_spm/.build/index-build/arm64-apple-macosx/debug/BluetoothKit.build/DataRecorder.swift.o",
@@ -126,6 +131,7 @@
       ],
       "prepareForIndexing" : true,
       "sources" : [
+        "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BatchDataConfigurationManager.swift",
         "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift",
         "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothManager.swift",
         "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/DataRecorder.swift",
@@ -148,6 +154,7 @@
       "test_spm",
       "-incremental",
       "-c",
+      "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BatchDataConfigurationManager.swift",
       "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothKit.swift",
       "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BluetoothManager.swift",
       "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/DataRecorder.swift",
@@ -234,6 +241,10 @@
         {
           "kind" : "virtual",
           "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/jackahn/Desktop/test_spm/Sources/BluetoothKit/BatchDataConfigurationManager.swift"
         },
         {
           "kind" : "file",
