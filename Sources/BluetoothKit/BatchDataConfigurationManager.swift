@@ -111,6 +111,9 @@ public class BatchDataConfigurationManager {
         if isConfigured {
             self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
             print("📝 콘솔 출력 센서 즉시 업데이트: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+            
+            // BluetoothKit에서도 센서 데이터 수집 재설정
+            self.reconfigureSensorsForSelection()
         }
     }
     
@@ -338,5 +341,31 @@ public class BatchDataConfigurationManager {
         if value != originalValue {
             self.sensorConfigurations[sensor]?.durationText = "\(value)"
         }
+    }
+    
+    /// 센서 선택 변경에 따라 BluetoothKit의 데이터 수집을 재설정합니다.
+    private func reconfigureSensorsForSelection() {
+        print("🔧 센서 데이터 수집 재설정 중...")
+        
+        // 모든 센서에 대해 선택 상태에 따라 설정/해제
+        for sensorType in SensorType.allCases {
+            if self.selectedSensors.contains(sensorType) {
+                // 선택된 센서: 데이터 수집 활성화
+                self.configureSensor(sensorType, isInitial: false)
+                print("✅ \(sensorType.displayName) 데이터 수집 재활성화")
+            } else {
+                // 선택 해제된 센서: 데이터 수집 비활성화
+                self.bluetoothKit.disableDataCollection(for: sensorType)
+                print("❌ \(sensorType.displayName) 데이터 수집 비활성화")
+            }
+        }
+        
+        // 기록 중이라면 기록 센서도 업데이트
+        if self.bluetoothKit.isRecording {
+            self.bluetoothKit.updateRecordingSensors()
+            print("📝 기록 센서 목록 업데이트 완료")
+        }
+        
+        print("✅ 센서 데이터 수집 재설정 완료")
     }
 } 
