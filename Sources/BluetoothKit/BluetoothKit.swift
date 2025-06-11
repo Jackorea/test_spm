@@ -274,6 +274,43 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// ```
     public weak var batchDataDelegate: SensorBatchDataDelegate?
     
+    // MARK: - Batch Data Configuration Manager
+    
+    /// 배치 데이터 수집 설정을 관리하는 매니저
+    private lazy var batchConfigurationManager: BatchDataConfigurationManager = {
+        return BatchDataConfigurationManager(bluetoothKit: self)
+    }()
+    
+    // MARK: - Batch Configuration Published Properties (Delegation)
+    
+    /// 선택된 수집 모드 (샘플 수 또는 시간 기반)
+    public var selectedCollectionMode: BatchDataConfigurationManager.CollectionMode {
+        get { batchConfigurationManager.selectedCollectionMode }
+        set { batchConfigurationManager.selectedCollectionMode = newValue }
+    }
+    
+    /// 선택된 센서들
+    public var selectedSensors: Set<SensorType> {
+        get { batchConfigurationManager.selectedSensors }
+        set { batchConfigurationManager.selectedSensors = newValue }
+    }
+    
+    /// 배치 모니터링이 활성화되어 있는지 여부
+    public var isBatchMonitoringActive: Bool {
+        batchConfigurationManager.isMonitoringActive
+    }
+    
+    /// 설정 변경 경고 팝업 표시 여부
+    public var showRecordingChangeWarning: Bool {
+        get { batchConfigurationManager.showRecordingChangeWarning }
+        set { batchConfigurationManager.showRecordingChangeWarning = newValue }
+    }
+    
+    /// 사용 가능한 모든 수집 모드
+    public var allCollectionModes: [BatchDataConfigurationManager.CollectionMode] {
+        BatchDataConfigurationManager.CollectionMode.allCases
+    }
+    
     // MARK: - Internal Properties
     
     /// 내부 연결 상태 (SDK 내부 사용만).
@@ -513,32 +550,6 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         clearBuffer(for: sensorType)
     }
     
-    /// 배치 데이터 수집을 설정합니다 (새로운 config 기반 API).
-    ///
-    /// BatchDataCollectionConfig를 사용하여 센서별 배치 데이터 수집을 설정합니다.
-    /// 앱에서 MVVM 패턴으로 설정을 관리할 때 사용하는 권장 방법입니다.
-    ///
-    /// - Parameter config: 배치 데이터 수집 설정
-    ///
-    /// ## 예시
-    ///
-    /// ```swift
-    /// // 샘플 수 기반 설정
-    /// let eegConfig = BatchDataCollectionConfig(
-    ///     sensorType: .eeg,
-    ///     targetSampleCount: 250
-    /// )
-    /// bluetoothKit.configureBatchDataCollection(config: eegConfig)
-    ///
-    /// // 시간 기반 설정
-    /// let ppgConfig = BatchDataCollectionConfig(
-    ///     sensorType: .ppg,
-    ///     targetDurationSeconds: 2
-    /// )
-    /// bluetoothKit.configureBatchDataCollection(config: ppgConfig)
-    /// ```
-
-    
     /// 특정 센서의 배치 데이터 수집을 비활성화합니다.
     ///
     /// 해당 센서는 기본 동작(latest* 프로퍼티 업데이트)만 수행하고
@@ -773,6 +784,112 @@ extension BluetoothKit: DataRecorderDelegate {
     internal func dataRecorder(_ recorder: AnyObject, didFailWithError error: Error) {
         isRecording = false
         log("Recording failed: \(error.localizedDescription)")
+    }
+    
+    // MARK: - Batch Configuration Management API
+    
+    /// 배치 모니터링을 시작합니다.
+    public func startBatchMonitoring() {
+        batchConfigurationManager.startMonitoring()
+    }
+    
+    /// 배치 모니터링을 중지합니다.
+    public func stopBatchMonitoring() {
+        batchConfigurationManager.stopMonitoring()
+    }
+    
+    /// 수집 모드를 업데이트합니다.
+    public func updateCollectionMode(_ mode: BatchDataConfigurationManager.CollectionMode) {
+        batchConfigurationManager.updateCollectionMode(mode)
+    }
+    
+    /// 센서 선택을 업데이트합니다.
+    public func updateSensorSelection(_ sensors: Set<SensorType>) {
+        batchConfigurationManager.updateSensorSelection(sensors)
+    }
+    
+    /// 특정 센서가 선택되어 있는지 확인합니다.
+    public func isSensorSelected(_ sensor: SensorType) -> Bool {
+        return batchConfigurationManager.isSensorSelected(sensor)
+    }
+    
+    /// 특정 센서의 샘플 수를 가져옵니다.
+    public func getSampleCount(for sensor: SensorType) -> Int {
+        return batchConfigurationManager.getSampleCount(for: sensor)
+    }
+    
+    /// 특정 센서의 수집 시간을 가져옵니다.
+    public func getDuration(for sensor: SensorType) -> Int {
+        return batchConfigurationManager.getDuration(for: sensor)
+    }
+    
+    /// 특정 센서의 샘플 수 텍스트를 가져옵니다.
+    public func getSampleCountText(for sensor: SensorType) -> String {
+        return batchConfigurationManager.getSampleCountText(for: sensor)
+    }
+    
+    /// 특정 센서의 수집 시간 텍스트를 가져옵니다.
+    public func getDurationText(for sensor: SensorType) -> String {
+        return batchConfigurationManager.getDurationText(for: sensor)
+    }
+    
+    /// 특정 센서의 샘플 수 텍스트를 설정합니다.
+    public func setSampleCountText(_ text: String, for sensor: SensorType) {
+        batchConfigurationManager.setSampleCountText(text, for: sensor)
+    }
+    
+    /// 특정 센서의 수집 시간 텍스트를 설정합니다.
+    public func setDurationText(_ text: String, for sensor: SensorType) {
+        batchConfigurationManager.setDurationText(text, for: sensor)
+    }
+    
+    /// 샘플 수를 검증합니다.
+    public func validateSampleCount(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchConfigurationManager.validateSampleCount(text, for: sensor)
+    }
+    
+    /// 수집 시간을 검증합니다.
+    public func validateDuration(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchConfigurationManager.validateDuration(text, for: sensor)
+    }
+    
+    /// 예상 수집 시간을 계산합니다.
+    public func getExpectedTime(for sensor: SensorType, sampleCount: Int) -> Double {
+        return batchConfigurationManager.getExpectedTime(for: sensor, sampleCount: sampleCount)
+    }
+    
+    /// 예상 샘플 수를 계산합니다.
+    public func getExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
+        return batchConfigurationManager.getExpectedSamples(for: sensor, duration: duration)
+    }
+    
+    /// 배치 설정 요약을 가져옵니다.
+    public func getConfigurationSummary() -> String {
+        return batchConfigurationManager.getConfigurationSummary()
+    }
+    
+    /// 기록 중지 후 센서 변경을 확인합니다.
+    public func confirmSensorChangeWithRecordingStop() {
+        batchConfigurationManager.confirmSensorChangeWithRecordingStop()
+    }
+    
+    /// 센서 변경을 취소합니다.
+    public func cancelSensorChange() {
+        batchConfigurationManager.cancelSensorChange()
+    }
+    
+    /// 기록 중 텍스트 필드 편집 시도를 처리합니다.
+    public func handleTextFieldEditAttemptDuringRecording() {
+        if isRecording {
+            showRecordingChangeWarning = true
+        }
+    }
+    
+    /// 기록 중 센서 선택 변경 시도를 처리합니다.
+    public func handleSensorSelectionDuringRecording(_ sensor: SensorType) {
+        if isRecording {
+            showRecordingChangeWarning = true
+        }
     }
     
     // MARK: - Private Logging
