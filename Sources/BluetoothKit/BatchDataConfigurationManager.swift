@@ -60,6 +60,13 @@ public class BatchDataConfigurationManager {
         static let duration = 1...3600
     }
     
+    /// 펜딩 중인 설정 변경 타입
+    public enum PendingConfigurationChange {
+        case sensorSelection(Set<SensorType>)
+        case sampleCount(value: Int, sensor: SensorType)
+        case duration(value: Int, sensor: SensorType)
+    }
+    
     // MARK: - Published Properties (Combine을 사용한 반응형 프로그래밍)
     
     @Published public var selectedCollectionMode: CollectionMode = .sampleCount
@@ -68,7 +75,8 @@ public class BatchDataConfigurationManager {
     
     // 경고 팝업 관련 상태
     @Published public var showRecordingChangeWarning = false
-    @Published public var pendingSensorSelection: Set<SensorType>?
+    @Published public var pendingSensorSelection: Set<SensorType>?  // 하위 호환성을 위해 유지
+    @Published public var pendingConfigurationChange: PendingConfigurationChange?
     
     /// 센서별 설정을 관리하는 Dictionary
     @Published private var sensorConfigurations: [SensorType: SensorConfiguration] = [:]
@@ -112,7 +120,8 @@ public class BatchDataConfigurationManager {
         if isMonitoringActive && self.bluetoothKit.isRecording {
             print("⚠️ 기록 중 센서 선택 변경 시도 감지")
             // UI에 경고 팝업 표시 요청
-            self.pendingSensorSelection = sensors
+            self.pendingConfigurationChange = .sensorSelection(sensors)
+            self.pendingSensorSelection = sensors  // 하위 호환성
             self.showRecordingChangeWarning = true
             return
         }
@@ -123,26 +132,35 @@ public class BatchDataConfigurationManager {
     
     /// 사용자가 경고 팝업에서 "기록 중지 후 변경"을 선택했을 때 호출
     public func confirmSensorChangeWithRecordingStop() {
-        guard let pendingSelection = self.pendingSensorSelection else { return }
+        guard let pendingChange = self.pendingConfigurationChange else { return }
         
-        print("✅ 사용자 확인: 기록 중지 후 센서 선택 변경")
+        print("✅ 사용자 확인: 기록 중지 후 설정 변경")
         
         // 기록 중지
         self.bluetoothKit.stopRecording()
         
-        // 센서 선택 적용
-        self.applySensorSelection(pendingSelection)
+        // 펜딩된 변경사항 적용
+        switch pendingChange {
+        case .sensorSelection(let sensors):
+            self.applySensorSelection(sensors)
+        case .sampleCount(let value, let sensor):
+            self.applySampleCountChange(value, for: sensor)
+        case .duration(let value, let sensor):
+            self.applyDurationChange(value, for: sensor)
+        }
         
         // 임시 저장 정리
+        self.pendingConfigurationChange = nil
         self.pendingSensorSelection = nil
         self.showRecordingChangeWarning = false
     }
     
     /// 사용자가 경고 팝업에서 "취소"를 선택했을 때 호출
     public func cancelSensorChange() {
-        print("❌ 사용자 취소: 센서 선택 변경 취소")
+        print("❌ 사용자 취소: 설정 변경 취소")
         
         // 임시 저장 정리
+        self.pendingConfigurationChange = nil
         self.pendingSensorSelection = nil
         self.showRecordingChangeWarning = false
     }
@@ -190,16 +208,32 @@ public class BatchDataConfigurationManager {
     
     /// 특정 센서의 샘플 수를 설정
     public func setSampleCount(_ value: Int, for sensor: SensorType) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.sampleCount = value
-        self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
+        // 기록 중이라면 경고 후 사용자 선택 요청
+        if isMonitoringActive && self.bluetoothKit.isRecording {
+            print("⚠️ 기록 중 샘플 수 변경 시도 감지")
+            // UI에 경고 팝업 표시 요청 (설정 변경)
+            self.pendingConfigurationChange = .sampleCount(value: value, sensor: sensor)
+            self.showRecordingChangeWarning = true
+            return
+        }
+        
+        // 기록 중이 아니라면 즉시 적용
+        self.applySampleCountChange(value, for: sensor)
     }
     
     /// 특정 센서의 시간을 설정
     public func setDuration(_ value: Int, for sensor: SensorType) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.duration = value
-        self.sensorConfigurations[sensor]?.durationText = "\(value)"
+        // 기록 중이라면 경고 후 사용자 선택 요청
+        if isMonitoringActive && self.bluetoothKit.isRecording {
+            print("⚠️ 기록 중 시간 설정 변경 시도 감지")
+            // UI에 경고 팝업 표시 요청 (설정 변경)
+            self.pendingConfigurationChange = .duration(value: value, sensor: sensor)
+            self.showRecordingChangeWarning = true
+            return
+        }
+        
+        // 기록 중이 아니라면 즉시 적용
+        self.applyDurationChange(value, for: sensor)
     }
     
     /// 특정 센서의 샘플 수 텍스트를 설정
@@ -400,6 +434,32 @@ public class BatchDataConfigurationManager {
                 self.bluetoothKit.disableDataCollection(for: sensorType)
                 print("🚫 비활성화: \(sensorType.displayName) - 데이터 수집 중지")
             }
+        }
+    }
+    
+    /// 샘플 수 변경 적용
+    private func applySampleCountChange(_ value: Int, for sensor: SensorType) {
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.sampleCount = value
+        self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
+        
+        // 모니터링 중이라면 센서 재설정
+        if isMonitoringActive && self.selectedSensors.contains(sensor) {
+            self.configureSensor(sensor, isInitial: false)
+            print("🔄 샘플 수 변경 적용: \(sensor.displayName) - \(value)개 샘플")
+        }
+    }
+    
+    /// 시간 변경 적용
+    private func applyDurationChange(_ value: Int, for sensor: SensorType) {
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.duration = value
+        self.sensorConfigurations[sensor]?.durationText = "\(value)"
+        
+        // 모니터링 중이라면 센서 재설정
+        if isMonitoringActive && self.selectedSensors.contains(sensor) {
+            self.configureSensor(sensor, isInitial: false)
+            print("🔄 시간 설정 변경 적용: \(sensor.displayName) - \(value)초")
         }
     }
 } 
