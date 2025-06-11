@@ -55,7 +55,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 유효성 검사 범위 정의
-    private struct ValidationRange {
+    private enum ValidationRange {
         static let sampleCount = 1...100000
         static let duration = 1...3600
     }
@@ -79,95 +79,97 @@ public class BatchDataConfigurationManager {
     
     public init(bluetoothKit: BluetoothKit) {
         self.bluetoothKit = bluetoothKit
-        initializeDefaultConfigurations()
-        setupReactiveBindings()
+        self.initializeDefaultConfigurations()
+        self.setupReactiveBindings()
     }
     
     // MARK: - Public Configuration Methods
     
     public func applyInitialConfiguration() {
-        guard !selectedSensors.isEmpty else { return }
+        guard !self.selectedSensors.isEmpty else { return }
         
-        setupBatchDelegate()
-        configureAllSensors()
-        isConfigured = true
+        self.setupBatchDelegate()
+        self.configureAllSensors()
+        self.isConfigured = true
+        print("✅ 배치 데이터 수집 설정 완료 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     public func removeConfiguration() {
-        bluetoothKit.disableAllDataCollection()
-        batchDelegate?.updateSelectedSensors(Set<SensorType>())
-        bluetoothKit.batchDataDelegate = nil
-        batchDelegate = nil
-        isConfigured = false
+        self.bluetoothKit.disableAllDataCollection()
+        self.batchDelegate?.updateSelectedSensors(Set<SensorType>())
+        self.bluetoothKit.batchDataDelegate = nil
+        self.batchDelegate = nil
+        self.isConfigured = false
         print("❌ 배치 데이터 수집 설정 해제")
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
-        selectedSensors = sensors
+        self.selectedSensors = sensors
+        print("🔄 센서 선택 업데이트: \(sensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     public func updateCollectionMode(_ mode: CollectionMode) {
-        selectedCollectionMode = mode
+        self.selectedCollectionMode = mode
     }
     
     // MARK: - Sensor Configuration Access
     
     /// 특정 센서의 샘플 수를 반환
     public func getSampleCount(for sensor: SensorType) -> Int {
-        return sensorConfigurations[sensor]?.sampleCount ?? SensorConfiguration.defaultConfiguration(for: sensor).sampleCount
+        return self.sensorConfigurations[sensor]?.sampleCount ?? SensorConfiguration.defaultConfiguration(for: sensor).sampleCount
     }
     
     /// 특정 센서의 시간(초)을 반환
     public func getDuration(for sensor: SensorType) -> Int {
-        return sensorConfigurations[sensor]?.duration ?? SensorConfiguration.defaultConfiguration(for: sensor).duration
+        return self.sensorConfigurations[sensor]?.duration ?? SensorConfiguration.defaultConfiguration(for: sensor).duration
     }
     
     /// 특정 센서의 샘플 수 텍스트를 반환
     public func getSampleCountText(for sensor: SensorType) -> String {
-        return sensorConfigurations[sensor]?.sampleCountText ?? "\(getSampleCount(for: sensor))"
+        return self.sensorConfigurations[sensor]?.sampleCountText ?? "\(self.getSampleCount(for: sensor))"
     }
     
     /// 특정 센서의 시간 텍스트를 반환
     public func getDurationText(for sensor: SensorType) -> String {
-        return sensorConfigurations[sensor]?.durationText ?? "\(getDuration(for: sensor))"
+        return self.sensorConfigurations[sensor]?.durationText ?? "\(self.getDuration(for: sensor))"
     }
     
     /// 특정 센서의 샘플 수를 설정
     public func setSampleCount(_ value: Int, for sensor: SensorType) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.sampleCount = value
-        sensorConfigurations[sensor]?.sampleCountText = "\(value)"
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.sampleCount = value
+        self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
     }
     
     /// 특정 센서의 시간을 설정
     public func setDuration(_ value: Int, for sensor: SensorType) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.duration = value
-        sensorConfigurations[sensor]?.durationText = "\(value)"
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.duration = value
+        self.sensorConfigurations[sensor]?.durationText = "\(value)"
     }
     
     /// 특정 센서의 샘플 수 텍스트를 설정
     public func setSampleCountText(_ text: String, for sensor: SensorType) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.sampleCountText = text
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.sampleCountText = text
     }
     
     /// 특정 센서의 시간 텍스트를 설정
     public func setDurationText(_ text: String, for sensor: SensorType) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.durationText = text
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.durationText = text
     }
     
     // MARK: - Validation Methods
     
     /// 샘플 수 유효성 검사
     public func validateSampleCount(_ text: String, for sensor: SensorType) -> ValidationResult {
-        return validateValue(text, for: sensor, valueType: .sampleCount, range: ValidationRange.sampleCount)
+        return self.validateValue(text, for: sensor, valueType: .sampleCount, range: ValidationRange.sampleCount)
     }
     
     /// 시간 유효성 검사
     public func validateDuration(_ text: String, for sensor: SensorType) -> ValidationResult {
-        return validateValue(text, for: sensor, valueType: .duration, range: ValidationRange.duration)
+        return self.validateValue(text, for: sensor, valueType: .duration, range: ValidationRange.duration)
     }
     
     // MARK: - Helper Methods
@@ -182,19 +184,19 @@ public class BatchDataConfigurationManager {
     
     /// 모든 센서 설정을 기본값으로 리셋
     public func resetToDefaults() {
-        initializeDefaultConfigurations()
+        self.initializeDefaultConfigurations()
     }
     
     /// 설정 상태 요약 반환
     public func getConfigurationSummary() -> String {
-        let mode = selectedCollectionMode.displayName
-        let sensors = selectedSensors.map { $0.displayName }.joined(separator: ", ")
+        let mode = self.selectedCollectionMode.displayName
+        let sensors = self.selectedSensors.map { $0.displayName }.joined(separator: ", ")
         return "모드: \(mode), 센서: \(sensors)"
     }
     
     /// 특정 센서가 선택되었는지 확인
     public func isSensorSelected(_ sensor: SensorType) -> Bool {
-        return selectedSensors.contains(sensor)
+        return self.selectedSensors.contains(sensor)
     }
     
     // MARK: - Private Methods
@@ -207,7 +209,7 @@ public class BatchDataConfigurationManager {
     /// 기본 설정 초기화
     private func initializeDefaultConfigurations() {
         for sensorType in SensorType.allCases {
-            sensorConfigurations[sensorType] = SensorConfiguration.defaultConfiguration(for: sensorType)
+            self.sensorConfigurations[sensorType] = SensorConfiguration.defaultConfiguration(for: sensorType)
         }
     }
     
@@ -215,8 +217,8 @@ public class BatchDataConfigurationManager {
     private func setupReactiveBindings() {
         // 설정이 변경될 때마다 자동으로 적용
         Publishers.CombineLatest(
-            $selectedCollectionMode,
-            $selectedSensors
+            self.$selectedCollectionMode,
+            self.$selectedSensors
         )
         .dropFirst() // 초기값 무시
         .sink { [weak self] _, _ in
@@ -224,13 +226,13 @@ public class BatchDataConfigurationManager {
                 self?.applyChanges()
             }
         }
-        .store(in: &cancellables)
+        .store(in: &self.cancellables)
     }
     
     /// 센서 설정이 존재하는지 확인하고 없으면 생성
     private func ensureConfigurationExists(for sensor: SensorType) {
-        if sensorConfigurations[sensor] == nil {
-            sensorConfigurations[sensor] = SensorConfiguration.defaultConfiguration(for: sensor)
+        if self.sensorConfigurations[sensor] == nil {
+            self.sensorConfigurations[sensor] = SensorConfiguration.defaultConfiguration(for: sensor)
         }
     }
     
@@ -247,9 +249,9 @@ public class BatchDataConfigurationManager {
         
         switch valueType {
         case .sampleCount:
-            updateSampleCount(clampedValue, for: sensor, originalValue: value)
+            self.updateSampleCount(clampedValue, for: sensor, originalValue: value)
         case .duration:
-            updateDuration(clampedValue, for: sensor, originalValue: value)
+            self.updateDuration(clampedValue, for: sensor, originalValue: value)
         }
         
         return ValidationResult(isValid: true)
@@ -257,21 +259,22 @@ public class BatchDataConfigurationManager {
     
     /// 배치 델리게이트 설정
     private func setupBatchDelegate() {
-        if batchDelegate == nil {
-            batchDelegate = BatchDataConsoleLogger()
-            bluetoothKit.batchDataDelegate = batchDelegate
+        if self.batchDelegate == nil {
+            self.batchDelegate = BatchDataConsoleLogger()
+            self.bluetoothKit.batchDataDelegate = self.batchDelegate
         }
         
-        batchDelegate?.updateSelectedSensors(selectedSensors)
+        self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
+        print("🔧 BatchDataConsoleLogger 설정 완료 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     /// 모든 센서 설정 적용
     private func configureAllSensors() {
         for sensorType in SensorType.allCases {
-            if selectedSensors.contains(sensorType) {
-                configureSensor(sensorType, isInitial: true)
+            if self.selectedSensors.contains(sensorType) {
+                self.configureSensor(sensorType, isInitial: true)
             } else {
-                bluetoothKit.disableDataCollection(for: sensorType)
+                self.bluetoothKit.disableDataCollection(for: sensorType)
                 print("🚫 초기 비활성화: \(sensorType.displayName) - 데이터 수집 제외")
             }
         }
@@ -279,33 +282,35 @@ public class BatchDataConfigurationManager {
     
     /// 변경사항 적용
     private func applyChanges() {
-        setupBatchDelegate()
+        print("🔄 센서 선택 변경 감지 - 설정 업데이트 중...")
+        self.setupBatchDelegate()
         
-        if bluetoothKit.isRecording {
-            bluetoothKit.updateRecordingSensors()
+        if self.bluetoothKit.isRecording {
+            self.bluetoothKit.updateRecordingSensors()
         }
         
-        configureAllSensors()
+        self.configureAllSensors()
+        print("✅ 센서 설정 업데이트 완료")
     }
     
     /// 특정 센서 설정
     private func configureSensor(_ sensor: SensorType, isInitial: Bool = false) {
         let prefix = isInitial ? "🔧 초기 설정" : "🔄 자동 변경"
         
-        switch selectedCollectionMode {
+        switch self.selectedCollectionMode {
         case .sampleCount:
-            let sampleCount = getSampleCount(for: sensor)
-            bluetoothKit.setDataCollection(sampleCount: sampleCount, for: sensor)
+            let sampleCount = self.getSampleCount(for: sensor)
+            self.bluetoothKit.setDataCollection(sampleCount: sampleCount, for: sensor)
             
-            let expectedTime = getExpectedTime(for: sensor, sampleCount: sampleCount)
+            let expectedTime = self.getExpectedTime(for: sensor, sampleCount: sampleCount)
             print("\(prefix): \(sensor.displayName) - \(sampleCount)개 샘플마다 배치 수신")
             print("   → \(sensor.displayName): \(sampleCount)개 샘플 = 약 \(String(format: "%.1f", expectedTime))초")
             
         case .duration:
-            let duration = getDuration(for: sensor)
-            bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration), for: sensor)
+            let duration = self.getDuration(for: sensor)
+            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration), for: sensor)
             
-            let expectedSamples = getExpectedSamples(for: sensor, duration: duration)
+            let expectedSamples = self.getExpectedSamples(for: sensor, duration: duration)
             print("\(prefix): \(sensor.displayName) - \(duration)초마다 배치 수신")
             print("   → \(sensor.displayName): \(duration)초마다 약 \(expectedSamples)개 샘플 예상")
         }
@@ -313,19 +318,19 @@ public class BatchDataConfigurationManager {
     
     /// 샘플 수 업데이트
     private func updateSampleCount(_ value: Int, for sensor: SensorType, originalValue: Int) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.sampleCount = value
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.sampleCount = value
         if value != originalValue {
-            sensorConfigurations[sensor]?.sampleCountText = "\(value)"
+            self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
         }
     }
     
     /// 시간 업데이트
     private func updateDuration(_ value: Int, for sensor: SensorType, originalValue: Int) {
-        ensureConfigurationExists(for: sensor)
-        sensorConfigurations[sensor]?.duration = value
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.duration = value
         if value != originalValue {
-            sensorConfigurations[sensor]?.durationText = "\(value)"
+            self.sensorConfigurations[sensor]?.durationText = "\(value)"
         }
     }
 } 
