@@ -16,8 +16,8 @@ internal class DataRecorder: @unchecked Sendable {
     private var recordingState: RecordingState = .idle
     private let logger: InternalLogger
     
-    // 활성화된 센서 타입들
-    private var enabledSensors: Set<SensorType> = []
+    // 선택된 센서 타입들을 저장
+    private var selectedSensorTypes: Set<SensorType> = []
     
     // File writers - using a serial queue for thread safety
     private let fileQueue = DispatchQueue(label: "com.bluetoothkit.filewriter", qos: .utility)
@@ -55,14 +55,6 @@ internal class DataRecorder: @unchecked Sendable {
         return recordingState.isRecording
     }
     
-    /// 기록할 센서 타입들을 설정합니다.
-    ///
-    /// - Parameter sensors: 기록할 센서 타입들의 Set
-    public func setEnabledSensors(_ sensors: Set<SensorType>) {
-        enabledSensors = sensors
-        log("Enabled sensors for recording: \(sensors.map { $0.description }.joined(separator: ", "))")
-    }
-    
     /// 기록된 파일들이 저장되는 디렉토리 URL을 반환합니다.
     public var recordingsDirectory: URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -83,13 +75,18 @@ internal class DataRecorder: @unchecked Sendable {
     ///
     /// 이미 기록 중인 경우 오류를 발생시킵니다.
     /// 기록 파일들(CSV, JSON)을 생성하고 기록 상태로 전환합니다.
-    public func startRecording() {
+    /// 
+    /// - Parameter selectedSensors: 기록할 센서 타입들의 집합
+    public func startRecording(with selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]) {
         guard recordingState == .idle else {
             let error = BluetoothKitError.recordingFailed("Already recording")
             log("Failed to start recording: Already recording")
             notifyRecordingError(error)
             return
         }
+        
+        // 선택된 센서 타입들 저장
+        selectedSensorTypes = selectedSensors
         
         do {
             try setupRecordingFiles()
@@ -130,7 +127,7 @@ internal class DataRecorder: @unchecked Sendable {
     ///
     /// - Parameter readings: 기록할 EEG 읽기값 배열
     public func recordEEGData(_ readings: [EEGReading]) {
-        guard isRecording && enabledSensors.contains(.eeg) else { return }
+        guard isRecording else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -151,7 +148,7 @@ internal class DataRecorder: @unchecked Sendable {
     ///
     /// - Parameter readings: 기록할 PPG 읽기값 배열
     public func recordPPGData(_ readings: [PPGReading]) {
-        guard isRecording && enabledSensors.contains(.ppg) else { return }
+        guard isRecording else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -171,7 +168,7 @@ internal class DataRecorder: @unchecked Sendable {
     ///
     /// - Parameter readings: 기록할 가속도계 읽기값 배열
     public func recordAccelerometerData(_ readings: [AccelerometerReading]) {
-        guard isRecording && enabledSensors.contains(.accelerometer) else { return }
+        guard isRecording else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -192,7 +189,7 @@ internal class DataRecorder: @unchecked Sendable {
     ///
     /// - Parameter reading: 기록할 배터리 읽기값
     public func recordBatteryData(_ reading: BatteryReading) {
-        guard isRecording && enabledSensors.contains(.battery) else { return }
+        guard isRecording else { return }
         
         // Battery data is not typically recorded in bulk, just noted
     }
@@ -224,21 +221,24 @@ internal class DataRecorder: @unchecked Sendable {
         let rawDataURL = recordingsDirectory.appendingPathComponent("raw_data_\(timestampString).json")
         try setupJSONFile(at: rawDataURL)
         
-        // Setup CSV files only for enabled sensors
+        // Setup CSV files - 선택된 센서만 생성
         let csvTimestampString = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ":", with: "-")
             .replacingOccurrences(of: "/", with: "-")
         
-        if enabledSensors.contains(.eeg) {
+        // EEG가 선택된 경우에만 EEG CSV 파일 생성
+        if selectedSensorTypes.contains(.eeg) {
             try setupEEGCSVFile(timestamp: csvTimestampString)
         }
         
-        if enabledSensors.contains(.ppg) {
+        // PPG가 선택된 경우에만 PPG CSV 파일 생성
+        if selectedSensorTypes.contains(.ppg) {
             try setupPPGCSVFile(timestamp: csvTimestampString)
         }
         
-        if enabledSensors.contains(.accelerometer) {
+        // 가속도계가 선택된 경우에만 가속도계 CSV 파일 생성
+        if selectedSensorTypes.contains(.accelerometer) {
             try setupAccelCSVFile(timestamp: csvTimestampString)
         }
         
