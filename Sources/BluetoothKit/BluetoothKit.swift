@@ -543,6 +543,22 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         clearAllBuffers()
     }
     
+    /// 기록 중에 선택된 센서를 업데이트합니다.
+    ///
+    /// 이미 기록이 시작된 상태에서 센서 선택을 변경할 때 사용됩니다.
+    /// 새로 선택된 센서의 데이터만 파일에 기록됩니다.
+    ///
+    /// ## 예시
+    ///
+    /// ```swift
+    /// // 기록 중에 EEG만 선택하도록 변경
+    /// bluetoothKit.updateRecordingSensors([.eeg])
+    /// ```
+    public func updateRecordingSensors() {
+        let selectedSensors = Set(dataCollectionConfigs.keys)
+        dataRecorder.updateSelectedSensors(selectedSensors)
+    }
+    
     // MARK: - Private Setup
     
     /// 센서별 버퍼를 초기화합니다.

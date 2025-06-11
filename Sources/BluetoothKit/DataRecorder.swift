@@ -121,6 +121,27 @@ internal class DataRecorder: @unchecked Sendable {
         }
     }
     
+    /// 기록 중에 선택된 센서를 업데이트합니다.
+    ///
+    /// 기록 중이 아닌 경우 아무 작업도 수행하지 않습니다.
+    /// 새로 선택된 센서만 향후 데이터가 기록됩니다.
+    ///
+    /// - Parameter selectedSensors: 기록할 센서 타입들의 집합
+    public func updateSelectedSensors(_ selectedSensors: Set<SensorType>) {
+        selectedSensorTypes = selectedSensors
+        print("📂 DataRecorder: 선택된 센서 업데이트 - \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
+    }
+    
+    /// 센서 타입을 문자열로 변환하는 헬퍼 메서드
+    private func sensorTypeToString(_ sensorType: SensorType) -> String {
+        switch sensorType {
+        case .eeg: return "EEG"
+        case .ppg: return "PPG"
+        case .accelerometer: return "ACC"
+        case .battery: return "배터리"
+        }
+    }
+    
     // MARK: - Data Recording Methods
     
     /// EEG 데이터를 기록합니다.
@@ -128,6 +149,9 @@ internal class DataRecorder: @unchecked Sendable {
     /// - Parameter readings: 기록할 EEG 읽기값 배열
     public func recordEEGData(_ readings: [EEGReading]) {
         guard isRecording else { return }
+        
+        // EEG가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.eeg) else { return }
         
         for reading in readings {
             // Add to raw data dict
@@ -150,6 +174,9 @@ internal class DataRecorder: @unchecked Sendable {
     public func recordPPGData(_ readings: [PPGReading]) {
         guard isRecording else { return }
         
+        // PPG가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.ppg) else { return }
+        
         for reading in readings {
             // Add to raw data dict
             appendToRawDataDict("ppgRed", value: reading.red)
@@ -169,6 +196,9 @@ internal class DataRecorder: @unchecked Sendable {
     /// - Parameter readings: 기록할 가속도계 읽기값 배열
     public func recordAccelerometerData(_ readings: [AccelerometerReading]) {
         guard isRecording else { return }
+        
+        // 가속도계가 선택된 센서에 포함되어 있을 때만 기록
+        guard selectedSensorTypes.contains(.accelerometer) else { return }
         
         for reading in readings {
             // Add to raw data dict
