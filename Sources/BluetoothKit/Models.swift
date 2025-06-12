@@ -823,18 +823,38 @@ public protocol SensorBatchDataDelegate: AnyObject {
 
 /// 데이터 수집 설정을 관리하는 내부 구조체입니다.
 internal struct DataCollectionConfig {
+    enum Mode {
+        case sampleCount(Int)
+        case timeInterval(TimeInterval)
+    }
+    
     let sensorType: SensorType
-    let targetSampleCount: Int
+    let mode: Mode
+    
+    // 샘플 개수 기반 모드용 편의 프로퍼티
+    var targetSampleCount: Int? {
+        if case .sampleCount(let count) = mode {
+            return count
+        }
+        return nil
+    }
+    
+    // 시간 간격 기반 모드용 편의 프로퍼티
+    var targetTimeInterval: TimeInterval? {
+        if case .timeInterval(let interval) = mode {
+            return interval
+        }
+        return nil
+    }
     
     init(sensorType: SensorType, sampleCount: Int) {
         self.sensorType = sensorType
-        self.targetSampleCount = max(1, sampleCount)  // 최소 1개만 보장
+        self.mode = .sampleCount(max(1, sampleCount))  // 최소 1개만 보장
     }
     
     init(sensorType: SensorType, timeInterval: TimeInterval) {
         self.sensorType = sensorType
-        let sampleCount = Int(max(0.001, timeInterval) * sensorType.sampleRate)  // 최소 1ms
-        self.targetSampleCount = max(1, sampleCount)
+        self.mode = .timeInterval(max(0.001, timeInterval))  // 최소 1ms
     }
 }
 
