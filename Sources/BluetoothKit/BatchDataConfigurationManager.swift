@@ -1,5 +1,27 @@
 import Foundation
-import Combine
+
+// MARK: - BatchDataConfigurationManager Delegate Protocol
+
+/// BatchDataConfigurationManager의 상태 변경을 알리는 델리게이트 프로토콜
+public protocol BatchDataConfigurationManagerDelegate: AnyObject {
+    /// 수집 모드가 변경되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdateCollectionMode mode: BatchDataConfigurationManager.CollectionMode)
+    
+    /// 선택된 센서가 변경되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdateSelectedSensors sensors: Set<SensorType>)
+    
+    /// 모니터링 상태가 변경되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdateMonitoringState isActive: Bool)
+    
+    /// 기록 변경 경고 상태가 변경되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdateRecordingChangeWarning show: Bool)
+    
+    /// 펜딩 센서 선택이 변경되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdatePendingSensorSelection sensors: Set<SensorType>?)
+    
+    /// 펜딩 설정 변경이 업데이트되었을 때 호출됩니다.
+    func batchManager(_ manager: BatchDataConfigurationManager, didUpdatePendingConfigurationChange change: BatchDataConfigurationManager.PendingConfigurationChange?)
+}
 
 /// 배치 데이터 수집 설정을 관리하는 비즈니스 로직 클래스
 /// UI 프레임워크에 의존하지 않는 순수한 비즈니스 로직을 제공합니다.
@@ -67,35 +89,72 @@ public class BatchDataConfigurationManager {
         case duration(value: Int, sensor: SensorType)
     }
     
-    // MARK: - Published Properties (Combine을 사용한 반응형 프로그래밍)
+    // MARK: - Public Properties (델리게이트 패턴으로 변경)
     
-    @Published public var selectedCollectionMode: CollectionMode = .sampleCount
-    @Published public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
-    @Published public var isMonitoringActive = false  // 설정 완료 → 모니터링 활성화로 변경
+    /// 델리게이트 객체
+    public weak var delegate: BatchDataConfigurationManagerDelegate?
+    
+    public private(set) var selectedCollectionMode: CollectionMode = .sampleCount {
+        didSet {
+            delegate?.batchManager(self, didUpdateCollectionMode: selectedCollectionMode)
+        }
+    }
+    
+    public private(set) var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer] {
+        didSet {
+            delegate?.batchManager(self, didUpdateSelectedSensors: selectedSensors)
+        }
+    }
+    
+    public private(set) var isMonitoringActive = false {
+        didSet {
+            delegate?.batchManager(self, didUpdateMonitoringState: isMonitoringActive)
+        }
+    }
     
     // 경고 팝업 관련 상태
-    @Published public var showRecordingChangeWarning = false
-    @Published public var pendingSensorSelection: Set<SensorType>?  // 하위 호환성을 위해 유지
-    @Published public var pendingConfigurationChange: PendingConfigurationChange?
+    public private(set) var showRecordingChangeWarning = false {
+        didSet {
+            delegate?.batchManager(self, didUpdateRecordingChangeWarning: showRecordingChangeWarning)
+        }
+    }
+    
+    public private(set) var pendingSensorSelection: Set<SensorType>? {
+        didSet {
+            delegate?.batchManager(self, didUpdatePendingSensorSelection: pendingSensorSelection)
+        }
+    }
+    
+    public private(set) var pendingConfigurationChange: PendingConfigurationChange? {
+        didSet {
+            delegate?.batchManager(self, didUpdatePendingConfigurationChange: pendingConfigurationChange)
+        }
+    }
     
     /// 센서별 설정을 관리하는 Dictionary
-    @Published private var sensorConfigurations: [SensorType: SensorConfiguration] = [:]
+    private var sensorConfigurations: [SensorType: SensorConfiguration] = [:]
     
     // MARK: - Dependencies
     
     private let bluetoothKit: BluetoothKit
     private var batchDelegate: BatchDataConsoleLogger?
-    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
     
     public init(bluetoothKit: BluetoothKit) {
         self.bluetoothKit = bluetoothKit
         self.initializeDefaultConfigurations()
-        self.setupReactiveBindings()
     }
     
     // MARK: - Public Configuration Methods
+    
+    public func updateCollectionMode(_ mode: CollectionMode) {
+        selectedCollectionMode = mode
+    }
+    
+    public func updateSelectedSensors(_ sensors: Set<SensorType>) {
+        selectedSensors = sensors
+    }
     
     public func startMonitoring() {
         guard !self.selectedSensors.isEmpty else { return }
@@ -178,10 +237,6 @@ public class BatchDataConfigurationManager {
             // BluetoothKit에서도 센서 데이터 수집 재설정
             self.reconfigureSensorsForSelection()
         }
-    }
-    
-    public func updateCollectionMode(_ mode: CollectionMode) {
-        self.selectedCollectionMode = mode
     }
     
     // MARK: - Sensor Configuration Access
@@ -301,50 +356,6 @@ public class BatchDataConfigurationManager {
         }
     }
     
-    /// 반응형 바인딩 설정
-    private func setupReactiveBindings() {
-        // 설정이 변경될 때마다 자동으로 적용
-        Publishers.CombineLatest(
-            self.$selectedCollectionMode,
-            self.$selectedSensors
-        )
-        .dropFirst() // 초기값 무시
-        .sink { [weak self] _, _ in
-            if self?.isMonitoringActive == true {
-                self?.applyChanges()
-            }
-        }
-        .store(in: &self.cancellables)
-    }
-    
-    /// 센서 설정이 존재하는지 확인하고 없으면 생성
-    private func ensureConfigurationExists(for sensor: SensorType) {
-        if self.sensorConfigurations[sensor] == nil {
-            self.sensorConfigurations[sensor] = SensorConfiguration.defaultConfiguration(for: sensor)
-        }
-    }
-    
-    /// 값 유효성 검사 및 업데이트
-    private func validateValue(_ text: String, for sensor: SensorType, valueType: ValueType, range: ClosedRange<Int>) -> ValidationResult {
-        guard let value = Int(text), value > 0 else {
-            if !text.isEmpty {
-                return ValidationResult(isValid: false, message: "유효한 숫자를 입력해주세요")
-            }
-            return ValidationResult(isValid: false)
-        }
-        
-        let clampedValue = max(range.lowerBound, min(value, range.upperBound))
-        
-        switch valueType {
-        case .sampleCount:
-            self.updateSampleCount(clampedValue, for: sensor, originalValue: value)
-        case .duration:
-            self.updateDuration(clampedValue, for: sensor, originalValue: value)
-        }
-        
-        return ValidationResult(isValid: true)
-    }
-    
     /// 배치 델리게이트 설정
     private func setupBatchDelegate() {
         if self.batchDelegate == nil {
@@ -461,5 +472,33 @@ public class BatchDataConfigurationManager {
             self.configureSensor(sensor, isInitial: false)
             print("🔄 시간 설정 변경 적용: \(sensor.displayName) - \(value)초")
         }
+    }
+    
+    /// 센서 설정이 존재하는지 확인하고 없으면 생성
+    private func ensureConfigurationExists(for sensor: SensorType) {
+        if self.sensorConfigurations[sensor] == nil {
+            self.sensorConfigurations[sensor] = SensorConfiguration.defaultConfiguration(for: sensor)
+        }
+    }
+    
+    /// 값 유효성 검사 및 업데이트
+    private func validateValue(_ text: String, for sensor: SensorType, valueType: ValueType, range: ClosedRange<Int>) -> ValidationResult {
+        guard let value = Int(text), value > 0 else {
+            if !text.isEmpty {
+                return ValidationResult(isValid: false, message: "유효한 숫자를 입력해주세요")
+            }
+            return ValidationResult(isValid: false)
+        }
+        
+        let clampedValue = max(range.lowerBound, min(value, range.upperBound))
+        
+        switch valueType {
+        case .sampleCount:
+            self.updateSampleCount(clampedValue, for: sensor, originalValue: value)
+        case .duration:
+            self.updateDuration(clampedValue, for: sensor, originalValue: value)
+        }
+        
+        return ValidationResult(isValid: true)
     }
 } 
