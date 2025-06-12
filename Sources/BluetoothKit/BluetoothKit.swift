@@ -1,54 +1,18 @@
 import Foundation
 import CoreBluetooth
 
-// MARK: - BluetoothKit Delegate Protocol
-
-/// BluetoothKit의 상태 변경을 알리는 델리게이트 프로토콜
-public protocol BluetoothKitDelegate: AnyObject {
-    /// 디바이스가 발견되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didDiscoverDevice device: BluetoothDevice)
-    
-    /// 발견된 디바이스 목록이 업데이트되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateDiscoveredDevices devices: [BluetoothDevice])
-    
-    /// 연결 상태가 변경되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateConnectionStatus status: String)
-    
-    /// 스캔 상태가 변경되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateScanningState isScanning: Bool)
-    
-    /// 기록 상태가 변경되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateRecordingState isRecording: Bool)
-    
-    /// 자동 재연결 설정이 변경되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateAutoReconnectState isEnabled: Bool)
-    
-    /// 새로운 센서 데이터가 수신되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didReceiveEEGReading reading: EEGReading)
-    func bluetoothKit(_ kit: BluetoothKit, didReceivePPGReading reading: PPGReading)
-    func bluetoothKit(_ kit: BluetoothKit, didReceiveAccelerometerReading reading: AccelerometerReading)
-    func bluetoothKit(_ kit: BluetoothKit, didReceiveBatteryReading reading: BatteryReading)
-    
-    /// 기록된 파일 목록이 업데이트되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateRecordedFiles files: [URL])
-    
-    /// Bluetooth 비활성화 상태가 변경되었을 때 호출됩니다.
-    func bluetoothKit(_ kit: BluetoothKit, didUpdateBluetoothDisabledState isDisabled: Bool)
-}
-
 // MARK: - BluetoothKit Main Interface
 
 /// LinkBand 센서에서 데이터를 읽고 연결을 관리하는 메인 클래스입니다.
 ///
 /// 이 클래스는 Bluetooth Low Energy를 통해 LinkBand 디바이스와 통신하며,
 /// EEG, PPG, 가속도계, 배터리 데이터를 실시간으로 수신합니다.
-/// 델리게이트 패턴을 통해 상태 변경을 알립니다.
+/// SwiftUI의 `@ObservableObject`로 구현되어 UI와 자동으로 동기화됩니다.
 ///
 /// ## 기본 사용법
 ///
 /// ```swift
-/// let bluetoothKit = BluetoothKit()
-/// bluetoothKit.delegate = self
+/// @StateObject private var bluetoothKit = BluetoothKit()
 ///
 /// // 1. 디바이스 스캔
 /// bluetoothKit.startScanning()
@@ -67,12 +31,9 @@ public protocol BluetoothKitDelegate: AnyObject {
 /// }
 /// ```
 @available(iOS 13.0, macOS 10.15, *)
-public class BluetoothKit: @unchecked Sendable {
+public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     // MARK: - Public Properties
-    
-    /// 델리게이트 객체
-    public weak var delegate: BluetoothKitDelegate?
     
     /// 스캔 중 발견된 Bluetooth 디바이스 목록.
     ///
@@ -83,8 +44,10 @@ public class BluetoothKit: @unchecked Sendable {
     ///
     /// ```swift
     /// // 발견된 디바이스 목록 표시
-    /// for device in bluetoothKit.discoveredDevices {
-    ///     print("Device: \(device.name)")
+    /// ForEach(bluetoothKit.discoveredDevices, id: \.id) { device in
+    ///     Button(device.name) {
+    ///         bluetoothKit.connect(to: device)
+    ///     }
     /// }
     ///
     /// // 특정 디바이스 연결
@@ -92,7 +55,7 @@ public class BluetoothKit: @unchecked Sendable {
     ///     bluetoothKit.connect(to: targetDevice)
     /// }
     /// ```
-    public private(set) var discoveredDevices: [BluetoothDevice] = []
+    @Published public var discoveredDevices: [BluetoothDevice] = []
     
     /// 현재 연결 상태의 사용자 친화적인 설명.
     ///
@@ -107,8 +70,9 @@ public class BluetoothKit: @unchecked Sendable {
     /// ## 예시
     ///
     /// ```swift
-    /// // 상태 확인
-    /// print("상태: \(bluetoothKit.connectionStatusDescription)")
+    /// // 상태바에 연결 상태 표시
+    /// Text("상태: \(bluetoothKit.connectionStatusDescription)")
+    ///     .foregroundColor(bluetoothKit.isConnected ? .green : .gray)
     ///
     /// // 연결 완료 감지
     /// if bluetoothKit.connectionStatusDescription.contains("연결됨") {
@@ -116,29 +80,21 @@ public class BluetoothKit: @unchecked Sendable {
     ///     bluetoothKit.startRecording()
     /// }
     /// ```
-    public private(set) var connectionStatusDescription: String = "연결 안됨" {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateConnectionStatus: connectionStatusDescription)
-        }
-    }
+    @Published public var connectionStatusDescription: String = "연결 안됨"
     
     /// 라이브러리가 현재 디바이스를 스캔 중인지 여부.
     ///
     /// ## 예시
     ///
     /// ```swift
-    /// // 스캔 상태 확인
+    /// // 스캔 상태에 따른 UI 표시
     /// if bluetoothKit.isScanning {
-    ///     print("스캔 중...")
+    ///     Button("중지") { bluetoothKit.stopScanning() }
     /// } else {
-    ///     print("스캔 중지됨")
+    ///     Button("스캔 시작") { bluetoothKit.startScanning() }
     /// }
     /// ```
-    public private(set) var isScanning: Bool = false {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateScanningState: isScanning)
-        }
-    }
+    @Published public var isScanning: Bool = false
     
     /// 데이터 기록이 현재 활성화되어 있는지 여부.
     ///
@@ -151,12 +107,17 @@ public class BluetoothKit: @unchecked Sendable {
     /// if bluetoothKit.isRecording {
     ///     print("현재 기록 중...")
     /// }
+    ///
+    /// // SwiftUI에서 기록 버튼
+    /// Button(bluetoothKit.isRecording ? "기록 중지" : "기록 시작") {
+    ///     if bluetoothKit.isRecording {
+    ///         bluetoothKit.stopRecording()
+    ///     } else {
+    ///         bluetoothKit.startRecording()
+    ///     }
+    /// }
     /// ```
-    public private(set) var isRecording: Bool = false {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateRecordingState: isRecording)
-        }
-    }
+    @Published public var isRecording: Bool = false
     
     /// auto-reconnection이 현재 활성화되어 있는지 여부.
     ///
@@ -165,19 +126,16 @@ public class BluetoothKit: @unchecked Sendable {
     /// ## 예시
     ///
     /// ```swift
-    /// // 자동 재연결 설정 변경
-    /// bluetoothKit.setAutoReconnectEnabled(true)
+    /// // 자동 재연결 토글
+    /// Toggle("자동 재연결", isOn: $bluetoothKit.isAutoReconnectEnabled)
     ///
-    /// // 현재 설정 확인
+    /// // 설정에 따른 UI 표시
     /// if bluetoothKit.isAutoReconnectEnabled {
-    ///     print("자동 재연결 활성화됨")
+    ///     Image(systemName: "arrow.triangle.2.circlepath")
+    ///         .foregroundColor(.blue)
     /// }
     /// ```
-    public private(set) var isAutoReconnectEnabled: Bool = true {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateAutoReconnectState: isAutoReconnectEnabled)
-        }
-    }
+    @Published public var isAutoReconnectEnabled: Bool = true
     
     // 최신 센서 읽기값
     
@@ -189,21 +147,15 @@ public class BluetoothKit: @unchecked Sendable {
     /// ## 예시
     ///
     /// ```swift
-    /// // EEG 데이터 확인
+    /// // EEG 데이터 표시
     /// if let eeg = bluetoothKit.latestEEGReading {
-    ///     print("EEG: \(eeg.channel1)µV / \(eeg.channel2)µV")
-    ///     print("Lead-off: \(eeg.leadOff ? "감지됨" : "정상")")
+    ///     Text("EEG: \(eeg.channel1)µV / \(eeg.channel2)µV")
+    ///     Text("Lead-off: \(eeg.leadOff ? "감지됨" : "정상")")
     /// } else {
-    ///     print("EEG 데이터 없음")
+    ///     Text("EEG 데이터 없음")
     /// }
     /// ```
-    public private(set) var latestEEGReading: EEGReading? {
-        didSet {
-            if let reading = latestEEGReading {
-                delegate?.bluetoothKit(self, didReceiveEEGReading: reading)
-            }
-        }
-    }
+    @Published public var latestEEGReading: EEGReading?
     
     /// 가장 최근의 PPG (광전 용적 맥파) 읽기값.
     ///
@@ -213,20 +165,18 @@ public class BluetoothKit: @unchecked Sendable {
     /// ## 예시
     ///
     /// ```swift
-    /// // PPG 데이터 확인
+    /// // PPG 데이터 표시
     /// if let ppg = bluetoothKit.latestPPGReading {
-    ///     print("Red: \(ppg.red), IR: \(ppg.infrared)")
+    ///     VStack {
+    ///         Text("Red: \(ppg.red)")
+    ///         Text("IR: \(ppg.infrared)")
+    ///         Text("심박수 계산 가능")
+    ///     }
     /// } else {
-    ///     print("PPG 데이터 대기 중...")
+    ///     Text("PPG 데이터 대기 중...")
     /// }
     /// ```
-    public private(set) var latestPPGReading: PPGReading? {
-        didSet {
-            if let reading = latestPPGReading {
-                delegate?.bluetoothKit(self, didReceivePPGReading: reading)
-            }
-        }
-    }
+    @Published public var latestPPGReading: PPGReading?
     
     /// 가장 최근의 가속도계 읽기값.
     ///
@@ -236,76 +186,72 @@ public class BluetoothKit: @unchecked Sendable {
     /// ## 예시
     ///
     /// ```swift
-    /// // 가속도계 데이터 확인
+    /// // 가속도계 데이터 표시
     /// if let accel = bluetoothKit.latestAccelerometerReading {
-    ///     print("X: \(accel.x), Y: \(accel.y), Z: \(accel.z)")
+    ///     HStack {
+    ///         Text("X: \(String(format: "%.2f", accel.x))")
+    ///         Text("Y: \(String(format: "%.2f", accel.y))")
+    ///         Text("Z: \(String(format: "%.2f", accel.z))")
+    ///     }
     /// }
     /// ```
-    public private(set) var latestAccelerometerReading: AccelerometerReading? {
-        didSet {
-            if let reading = latestAccelerometerReading {
-                delegate?.bluetoothKit(self, didReceiveAccelerometerReading: reading)
-            }
-        }
-    }
+    @Published public var latestAccelerometerReading: AccelerometerReading?
     
     /// 가장 최근의 배터리 레벨 읽기값.
     ///
-    /// 배터리 잔량 정보를 포함합니다.
+    /// 연결된 디바이스의 배터리 백분율(0-100%)을 포함합니다.
     /// 아직 배터리 데이터를 받지 못한 경우 `nil`입니다.
     ///
     /// ## 예시
     ///
     /// ```swift
-    /// // 배터리 데이터 확인
+    /// // 배터리 상태 표시
     /// if let battery = bluetoothKit.latestBatteryReading {
-    ///     print("배터리: \(battery.level)%")
+    ///     HStack {
+    ///         Image(systemName: "battery.25")
+    ///         Text("\(Int(battery.percentage))%")
+    ///     }
+    ///     .foregroundColor(battery.percentage < 20 ? .red : .primary)
     /// }
     /// ```
-    public private(set) var latestBatteryReading: BatteryReading? {
-        didSet {
-            if let reading = latestBatteryReading {
-                delegate?.bluetoothKit(self, didReceiveBatteryReading: reading)
-            }
-        }
-    }
+    @Published public var latestBatteryReading: BatteryReading?
     
-    /// 기록된 파일들의 URL 목록.
+    /// 기록된 데이터 파일 목록.
     ///
-    /// 데이터 기록을 통해 생성된 파일들의 경로를 포함합니다.
-    /// 파일이 없는 경우 빈 배열입니다.
+    /// 기록이 완료되면 자동으로 업데이트됩니다.
+    /// 각 기록 세션은 여러 CSV 파일(센서 타입당 하나)을 생성합니다.
     ///
     /// ## 예시
     ///
     /// ```swift
-    /// // 기록된 파일 목록 확인
-    /// for fileURL in bluetoothKit.recordedFiles {
-    ///     print("파일: \(fileURL.lastPathComponent)")
+    /// // 기록된 파일 목록 표시
+    /// List(bluetoothKit.recordedFiles, id: \.self) { file in
+    ///     Text(file.lastPathComponent)
     /// }
-    /// ```
-    public private(set) var recordedFiles: [URL] = [] {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateRecordedFiles: recordedFiles)
-        }
-    }
-    
-    /// Bluetooth가 비활성화되어 있는지 여부.
     ///
-    /// `true`일 때, 디바이스의 Bluetooth가 꺼져 있어 스캔이나 연결이 불가능합니다.
+    /// // 파일 개수 표시
+    /// Text("저장된 파일: \(bluetoothKit.recordedFiles.count)개")
+    /// ```
+    @Published public var recordedFiles: [URL] = []
+    
+    /// Bluetooth가 현재 비활성화되어 있는지 여부.
+    ///
+    /// Bluetooth가 꺼지면 자동으로 `true`로 설정됩니다.
     ///
     /// ## 예시
     ///
     /// ```swift
-    /// // Bluetooth 상태 확인
+    /// // Bluetooth 상태 경고 표시
     /// if bluetoothKit.isBluetoothDisabled {
-    ///     print("Bluetooth를 켜주세요")
+    ///     Text("⚠️ Bluetooth를 활성화해주세요")
+    ///         .foregroundColor(.red)
     /// }
+    ///
+    /// // 스캔 버튼 비활성화
+    /// Button("스캔 시작") { }
+    ///     .disabled(bluetoothKit.isBluetoothDisabled)
     /// ```
-    public private(set) var isBluetoothDisabled: Bool = false {
-        didSet {
-            delegate?.bluetoothKit(self, didUpdateBluetoothDisabledState: isBluetoothDisabled)
-        }
-    }
+    @Published public var isBluetoothDisabled: Bool = false
     
     // MARK: - Batch Data Collection
     
@@ -563,12 +509,12 @@ public class BluetoothKit: @unchecked Sendable {
     ///
     /// ```swift
     /// // 견고한 연결을 위해 auto-reconnect 활성화
-    /// bluetoothKit.setAutoReconnectEnabled(true)
+    /// bluetoothKit.setAutoReconnect(enabled: true)
     /// 
     /// // 수동 연결 제어를 위해 비활성화
-    /// bluetoothKit.setAutoReconnectEnabled(false)
+    /// bluetoothKit.setAutoReconnect(enabled: false)
     /// ```
-    public func setAutoReconnectEnabled(_ enabled: Bool) {
+    public func setAutoReconnect(enabled: Bool) {
         isAutoReconnectEnabled = enabled
         bluetoothManager.enableAutoReconnect(enabled)
     }
@@ -844,8 +790,6 @@ extension BluetoothKit: BluetoothManagerDelegate {
     internal func bluetoothManager(_ manager: AnyObject, didDiscoverDevice device: BluetoothDevice) {
         if !discoveredDevices.contains(where: { $0.peripheral.identifier == device.peripheral.identifier }) {
             discoveredDevices.append(device)
-            delegate?.bluetoothKit(self, didDiscoverDevice: device)
-            delegate?.bluetoothKit(self, didUpdateDiscoveredDevices: discoveredDevices)
         }
     }
     
