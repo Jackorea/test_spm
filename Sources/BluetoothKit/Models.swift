@@ -932,9 +932,10 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         
         print("🧠 EEG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
         
-        // 모든 EEG 샘플 출력 (순서: ch1raw, ch2raw, ch1, ch2, leadOff)
+        // 모든 EEG 샘플 출력 (원본 타임스탬프만)
         for (index, reading) in readings.enumerated() {
-            print("   📊 샘플 #\(index + 1): CH1_RAW=\(reading.ch1Raw), CH2_RAW=\(reading.ch2Raw), CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV, LEAD_OFF=\(reading.leadOff ? 1 : 0)")
+            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
+            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), CH1_RAW=\(reading.ch1Raw), CH2_RAW=\(reading.ch2Raw), CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV, LEAD_OFF=\(reading.leadOff ? 1 : 0)")
         }
         print("") // 배치 간 구분을 위한 빈 줄
     }
@@ -949,9 +950,10 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         
         print("❤️ PPG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
         
-        // 모든 PPG 샘플 출력
+        // 모든 PPG 샘플 출력 (원본 타임스탬프만)
         for (index, reading) in readings.enumerated() {
-            print("   📊 샘플 #\(index + 1): RED=\(reading.red), IR=\(reading.ir)")
+            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
+            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), RED=\(reading.red), IR=\(reading.ir)")
         }
         print("") // 배치 간 구분을 위한 빈 줄
     }
@@ -966,9 +968,10 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         
         print("🏃 ACC 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
         
-        // 모든 ACC 샘플 출력
+        // 모든 ACC 샘플 출력 (원본 타임스탬프만)
         for (index, reading) in readings.enumerated() {
-            print("   📊 샘플 #\(index + 1): X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
+            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
         }
         print("") // 배치 간 구분을 위한 빈 줄
     }
@@ -978,7 +981,8 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         guard selectedSensors.contains(.battery) else { return }
         
         let elapsed = Date().timeIntervalSince(startTime)
-        print("🔋 배터리 업데이트 - \(reading.level)% (경과: \(String(format: "%.1f", elapsed))초)")
+        let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
+        print("🔋 배터리 업데이트 - TIMESTAMP=\(unixTimestamp), LEVEL=\(reading.level)% (경과: \(String(format: "%.1f", elapsed))초)")
         print("") // 다른 로그와 구분을 위한 빈 줄
     }
 } 
