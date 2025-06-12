@@ -25,9 +25,20 @@ internal class SensorDataParser: @unchecked Sendable {
     internal func parseEEGData(_ data: Data) throws -> [EEGReading] {
         let bytes = [UInt8](data)
         
-        // Validate packet size using configuration
-        guard bytes.count == configuration.eegPacketSize else {
-            throw BluetoothKitError.dataParsingFailed("EEG packet length invalid: \(bytes.count) bytes (expected \(configuration.eegPacketSize))")
+        // Check minimum packet size (header + at least one sample)
+        let headerSize = 4
+        guard bytes.count >= headerSize + configuration.eegSampleSize else {
+            throw BluetoothKitError.dataParsingFailed("EEG packet too short: \(bytes.count) bytes (minimum: \(headerSize + configuration.eegSampleSize))")
+        }
+        
+        // Calculate actual number of samples available
+        let dataWithoutHeader = bytes.count - headerSize
+        let actualSampleCount = dataWithoutHeader / configuration.eegSampleSize
+        let expectedSampleCount = (configuration.eegPacketSize - headerSize) / configuration.eegSampleSize
+        
+        // Log if packet size differs from expected
+        if bytes.count != configuration.eegPacketSize {
+            print("⚠️ EEG packet size: \(bytes.count) bytes (expected: \(configuration.eegPacketSize)), processing \(actualSampleCount) samples (expected: \(expectedSampleCount))")
         }
         
         // Extract timestamp from packet header
@@ -36,9 +47,16 @@ internal class SensorDataParser: @unchecked Sendable {
         
         var readings: [EEGReading] = []
         
-        // Parse samples using configuration parameters
-        let headerSize = 4
-        for i in stride(from: headerSize, to: configuration.eegPacketSize, by: configuration.eegSampleSize) {
+        // Parse only the available samples
+        for sampleIndex in 0..<actualSampleCount {
+            let i = headerSize + (sampleIndex * configuration.eegSampleSize)
+            
+            // Ensure we don't exceed array bounds
+            guard i + configuration.eegSampleSize <= bytes.count else {
+                print("⚠️ EEG sample \(sampleIndex + 1) incomplete, skipping remaining samples")
+                break
+            }
+            
             // lead-off (1 byte) - sensor connection status
             let leadOffRaw = bytes[i]
             let leadOffNormalized = leadOffRaw > 0  // true if any lead is disconnected
@@ -88,8 +106,21 @@ internal class SensorDataParser: @unchecked Sendable {
     /// - Throws: `BluetoothKitError.dataParsingFailed` if packet format is invalid
     internal func parsePPGData(_ data: Data) throws -> [PPGReading] {
         let bytes = [UInt8](data)
-        guard bytes.count == configuration.ppgPacketSize else {
-            throw BluetoothKitError.dataParsingFailed("PPG packet length invalid: \(bytes.count) bytes (expected \(configuration.ppgPacketSize))")
+        
+        // Check minimum packet size (header + at least one sample)
+        let headerSize = 4
+        guard bytes.count >= headerSize + configuration.ppgSampleSize else {
+            throw BluetoothKitError.dataParsingFailed("PPG packet too short: \(bytes.count) bytes (minimum: \(headerSize + configuration.ppgSampleSize))")
+        }
+        
+        // Calculate actual number of samples available
+        let dataWithoutHeader = bytes.count - headerSize
+        let actualSampleCount = dataWithoutHeader / configuration.ppgSampleSize
+        let expectedSampleCount = (configuration.ppgPacketSize - headerSize) / configuration.ppgSampleSize
+        
+        // Log if packet size differs from expected
+        if bytes.count != configuration.ppgPacketSize {
+            print("⚠️ PPG packet size: \(bytes.count) bytes (expected: \(configuration.ppgPacketSize)), processing \(actualSampleCount) samples (expected: \(expectedSampleCount))")
         }
 
         // Extract timestamp from packet header
@@ -98,8 +129,16 @@ internal class SensorDataParser: @unchecked Sendable {
 
         var readings: [PPGReading] = []
 
-        let headerSize = 4
-        for i in stride(from: headerSize, to: configuration.ppgPacketSize, by: configuration.ppgSampleSize) {
+        // Parse only the available samples
+        for sampleIndex in 0..<actualSampleCount {
+            let i = headerSize + (sampleIndex * configuration.ppgSampleSize)
+            
+            // Ensure we don't exceed array bounds
+            guard i + configuration.ppgSampleSize <= bytes.count else {
+                print("⚠️ PPG sample \(sampleIndex + 1) incomplete, skipping remaining samples")
+                break
+            }
+            
             let red = Int(bytes[i]) << 16 | Int(bytes[i+1]) << 8 | Int(bytes[i+2])
             let ir  = Int(bytes[i+3]) << 16 | Int(bytes[i+4]) << 8 | Int(bytes[i+5])
             
