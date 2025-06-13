@@ -171,8 +171,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// EEG 데이터 수집을 시작합니다.
     public func startEEGDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == EEGServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == EEGCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.eegService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.eegNotifyChar }) else {
             return
         }
         
@@ -187,8 +187,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// PPG 데이터 수집을 시작합니다.
     public func startPPGDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == PPGServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == PPGCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.ppgService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.ppgChar }) else {
             return
         }
         
@@ -203,8 +203,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// 가속도계 데이터 수집을 시작합니다.
     public func startAccelerometerDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == AccelerometerServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == AccelerometerCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.accelService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.accelChar }) else {
             return
         }
         
@@ -219,8 +219,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// EEG 데이터 수집을 중지합니다.
     public func stopEEGDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == EEGServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == EEGCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.eegService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.eegNotifyChar }) else {
             return
         }
         
@@ -235,8 +235,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// PPG 데이터 수집을 중지합니다.
     public func stopPPGDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == PPGServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == PPGCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.ppgService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.ppgChar }) else {
             return
         }
         
@@ -251,8 +251,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     /// 가속도계 데이터 수집을 중지합니다.
     public func stopAccelerometerDataCollection() {
         guard let peripheral = connectedPeripheral,
-              let service = peripheral.services?.first(where: { $0.uuid == AccelerometerServiceUUID }),
-              let characteristic = service.characteristics?.first(where: { $0.uuid == AccelerometerCharacteristicUUID }) else {
+              let service = peripheral.services?.first(where: { $0.uuid == SensorUUID.accelService }),
+              let characteristic = service.characteristics?.first(where: { $0.uuid == SensorUUID.accelChar }) else {
             return
         }
         
