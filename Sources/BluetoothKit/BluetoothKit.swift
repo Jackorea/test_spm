@@ -268,7 +268,6 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     // MARK: - Published Properties
     
     @Published public var connectionState: ConnectionState = .disconnected
-    @Published public var isRecording = false
     @Published public var isMonitoringActive = false  // 모니터링 활성화 상태 추가
     @Published public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
     
