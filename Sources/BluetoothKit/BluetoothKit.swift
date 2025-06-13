@@ -265,6 +265,13 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// ```
     @Published public var isBluetoothDisabled: Bool = false
     
+    // MARK: - Published Properties
+    
+    @Published public var connectionState: ConnectionState = .disconnected
+    @Published public var isRecording = false
+    @Published public var isMonitoringActive = false  // 모니터링 활성화 상태 추가
+    @Published public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
+    
     // MARK: - Private Properties
     
     /// 중력 성분 추정값 (X축)
@@ -795,6 +802,36 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     private func updateRecordedFiles() {
         recordedFiles = dataRecorder.getRecordedFiles()
+    }
+    
+    public func didConnect(_ peripheral: CBPeripheral) {
+        print("✅ 디바이스 연결 성공: \(peripheral.name ?? "Unknown")")
+        self.connectedPeripheral = peripheral
+        self.connectionState = .connected
+        self.lastConnectedPeripheralIdentifier = peripheral.identifier.uuidString
+        
+        // 연결 성공 시 자동 재연결 비활성화
+        self.isAutoReconnectEnabled = false
+        
+        // 연결된 디바이스의 서비스 탐색
+        peripheral.discoverServices(nil)
+        
+        // 연결 성공 시 자동으로 데이터 수집을 시작하지 않음
+        // 모니터링 시작 버튼을 눌러야만 데이터 수집 시작
+    }
+    
+    public func startMonitoring() {
+        guard let peripheral = self.connectedPeripheral else {
+            print("❌ 연결된 디바이스가 없습니다")
+            return
+        }
+        
+        print("🔄 모니터링 시작 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+        
+        // 선택된 센서들의 데이터 수집 시작
+        for sensor in self.selectedSensors {
+            self.enableDataCollection(for: sensor)
+        }
     }
 }
 
