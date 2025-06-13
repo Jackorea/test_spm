@@ -273,6 +273,12 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     // MARK: - Private Properties
     
+    /// 현재 연결된 Bluetooth 디바이스
+    private var connectedPeripheral: CBPeripheral?
+    
+    /// 마지막으로 연결된 디바이스의 식별자
+    private var lastConnectedPeripheralIdentifier: String?
+    
     /// 중력 성분 추정값 (X축)
     private var gravityX: Double = 0
     
