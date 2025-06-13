@@ -864,31 +864,34 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveAccelerometerData(_ reading: AccelerometerReading) {
         latestAccelerometerReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
-            dataRecorder.recordAccelerometerData([reading])
-        }
-        
         // 중력 추정값 업데이트
         updateGravityEstimate(reading)
         
-        // 현재 모드에 따라 적절한 값을 출력
+        // 현재 모드에 따라 적절한 값을 계산
+        let recordingReading: AccelerometerReading
         if accelerometerMode == .motion {
             // 중력 제거된 움직임 데이터 계산
             let motionX = Int16(Double(reading.x) - gravityX)
             let motionY = Int16(Double(reading.y) - gravityY)
             let motionZ = Int16(Double(reading.z) - gravityZ)
             
-            let motionReading = AccelerometerReading(
+            recordingReading = AccelerometerReading(
                 x: motionX,
                 y: motionY,
                 z: motionZ,
                 timestamp: reading.timestamp
             )
-            addToAccelerometerBuffer(motionReading)
         } else {
-            addToAccelerometerBuffer(reading)
+            recordingReading = reading
         }
+        
+        // 배치 수집이 설정된 센서만 기록
+        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
+            dataRecorder.recordAccelerometerData([recordingReading])
+        }
+        
+        // 버퍼에 추가
+        addToAccelerometerBuffer(recordingReading)
     }
     
     /// 중력 성분을 추정하고 업데이트하는 함수
