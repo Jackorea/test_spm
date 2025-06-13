@@ -687,6 +687,26 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     // MARK: - Private Setup
     
+    /// 지정된 센서의 데이터 수집을 활성화합니다.
+    private func enableDataCollection(for sensorType: SensorType) {
+        // 기본 설정으로 데이터 수집 활성화
+        let config = DataCollectionConfig(sensorType: sensorType, timeInterval: 1.0)  // 1초 간격으로 기본 설정
+        dataCollectionConfigs[sensorType] = config
+        clearBuffer(for: sensorType)
+        
+        // 시간 기반 배치 관리자 초기화
+        switch sensorType {
+        case .eeg:
+            eegTimeBatchManager = TimeBatchManager<EEGReading>(timeInterval: 1.0) { $0.timestamp }
+        case .ppg:
+            ppgTimeBatchManager = TimeBatchManager<PPGReading>(timeInterval: 1.0) { $0.timestamp }
+        case .accelerometer:
+            accelerometerTimeBatchManager = TimeBatchManager<AccelerometerReading>(timeInterval: 1.0) { $0.timestamp }
+        case .battery:
+            break // 배터리는 배치 처리하지 않음
+        }
+    }
+    
     /// 지정된 센서의 데이터 버퍼를 초기화합니다.
     private func clearBuffer(for sensorType: SensorType) {
         switch sensorType {
@@ -836,6 +856,9 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         for sensor in self.selectedSensors {
             self.enableDataCollection(for: sensor)
         }
+        
+        // 모니터링 상태 업데이트
+        self.isMonitoringActive = true
     }
 }
 
