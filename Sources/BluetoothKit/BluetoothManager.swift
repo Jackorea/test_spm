@@ -490,13 +490,7 @@ extension BluetoothManager: CBPeripheralDelegate {
     internal func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         
-        // 배터리 서비스를 먼저 검색
-        if let batteryService = services.first(where: { $0.uuid == SensorUUID.batteryService }) {
-            peripheral.discoverCharacteristics(nil, for: batteryService)
-        }
-        
-        // 나머지 서비스 검색
-        for service in services where service.uuid != SensorUUID.batteryService {
+        for service in services {
             peripheral.discoverCharacteristics(nil, for: service)
         }
     }
@@ -521,10 +515,6 @@ extension BluetoothManager: CBPeripheralDelegate {
                 // 배터리 특성이 발견되면 바로 읽기
                 if characteristic.uuid == SensorUUID.batteryChar {
                     peripheral.readValue(for: characteristic)
-                    // 배터리 알림 활성화 확인
-                    if !characteristic.isNotifying {
-                        peripheral.setNotifyValue(true, for: characteristic)
-                    }
                 }
             }
         }
