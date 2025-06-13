@@ -103,12 +103,14 @@ public class BatchDataConfigurationManager {
         
         self.setupBatchDelegate()
         self.configureAllSensors()
+        self.bluetoothKit.enableMonitoring()  // 모니터링 활성화
         self.isMonitoringActive = true
         print("✅ 센서 모니터링 시작 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     public func stopMonitoring() {
         self.bluetoothKit.disableAllDataCollection()
+        self.bluetoothKit.disableMonitoring()  // 모니터링 비활성화
         self.batchDelegate?.updateSelectedSensors(Set<SensorType>())
         self.bluetoothKit.batchDataDelegate = nil
         self.batchDelegate = nil

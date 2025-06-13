@@ -37,6 +37,9 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     private var isAutoReconnectEnabled: Bool = true
     private var isManualDisconnection: Bool = false  // 수동 연결해제 플래그 추가
     
+    // 센서 모니터링 상태
+    private var isMonitoringActive: Bool = false
+    
     // MARK: - Initialization
     
     /// 새로운 BluetoothManager 인스턴스를 생성합니다.
@@ -166,6 +169,36 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         }
     }
     
+    /// 센서 모니터링을 활성화합니다.
+    public func enableMonitoring() {
+        guard let peripheral = connectedPeripheral else { return }
+        isMonitoringActive = true
+        
+        // 모든 센서 특성에 대해 알림 활성화
+        for service in peripheral.services ?? [] {
+            for characteristic in service.characteristics ?? [] {
+                if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+            }
+        }
+    }
+    
+    /// 센서 모니터링을 비활성화합니다.
+    public func disableMonitoring() {
+        guard let peripheral = connectedPeripheral else { return }
+        isMonitoringActive = false
+        
+        // 모든 센서 특성에 대해 알림 비활성화
+        for service in peripheral.services ?? [] {
+            for characteristic in service.characteristics ?? [] {
+                if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
+                    peripheral.setNotifyValue(false, for: characteristic)
+                }
+            }
+        }
+    }
+    
     // MARK: - Private Methods
     
     private func handleDeviceDiscovered(_ peripheral: CBPeripheral, rssi: NSNumber) {
@@ -247,6 +280,9 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             log("Characteristic update error: \(error?.localizedDescription ?? "Unknown")")
             return
         }
+        
+        // 모니터링이 비활성화된 경우 데이터 처리하지 않음
+        guard isMonitoringActive else { return }
         
         do {
             switch characteristic.uuid {

@@ -654,8 +654,19 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// bluetoothKit.disableAllDataCollection()
     /// ```
     public func disableAllDataCollection() {
-        dataCollectionConfigs.removeAll()
-        clearAllBuffers()
+        for sensor in SensorType.allCases {
+            disableDataCollection(for: sensor)
+        }
+    }
+    
+    /// 센서 모니터링을 활성화합니다.
+    public func enableMonitoring() {
+        bluetoothManager.enableMonitoring()
+    }
+    
+    /// 센서 모니터링을 비활성화합니다.
+    public func disableMonitoring() {
+        bluetoothManager.disableMonitoring()
     }
     
     /// 기록 중에 선택된 센서를 업데이트합니다.
