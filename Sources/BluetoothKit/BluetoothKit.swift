@@ -137,6 +137,18 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// ```
     @Published public var isAutoReconnectEnabled: Bool = true
     
+    /// 현재 가속도계 데이터 모드입니다.
+    ///
+    /// 가속도계 데이터를 원시값으로 볼지, 움직임으로 볼지 결정합니다.
+    /// 이 설정은 AccelerometerDataCard의 표시와 데이터 수집 시 콘솔 출력에 영향을 줍니다.
+    @Published public var accelerometerMode: AccelerometerMode = .raw {
+        didSet {
+            if oldValue != accelerometerMode {
+                log("가속도계 모드 변경: \(accelerometerMode.rawValue)")
+            }
+        }
+    }
+    
     // 최신 센서 읽기값
     
     /// 가장 최근의 EEG (뇌전도) 읽기값.
@@ -840,7 +852,23 @@ extension BluetoothKit: SensorDataDelegate {
             dataRecorder.recordAccelerometerData([reading])
         }
         
-        addToAccelerometerBuffer(reading)
+        // 현재 모드에 따라 적절한 값을 출력
+        if accelerometerMode == .motion {
+            // 중력 제거된 움직임 데이터 계산
+            let motionX = Int16(Double(reading.x) - gravityX)
+            let motionY = Int16(Double(reading.y) - gravityY)
+            let motionZ = Int16(Double(reading.z) - gravityZ)
+            
+            let motionReading = AccelerometerReading(
+                x: motionX,
+                y: motionY,
+                z: motionZ,
+                timestamp: reading.timestamp
+            )
+            addToAccelerometerBuffer(motionReading)
+        } else {
+            addToAccelerometerBuffer(reading)
+        }
     }
     
     internal func didReceiveBatteryData(_ reading: BatteryReading) {

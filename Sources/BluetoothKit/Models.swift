@@ -985,4 +985,20 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         print("🔋 배터리 업데이트 - TIMESTAMP=\(unixTimestamp), LEVEL=\(reading.level)% (경과: \(String(format: "%.1f", elapsed))초)")
         print("") // 다른 로그와 구분을 위한 빈 줄
     }
+}
+
+/// 가속도계 데이터 모드를 나타내는 열거형입니다.
+public enum AccelerometerMode: String, CaseIterable {
+    case raw = "원시값"
+    case motion = "움직임"
+    
+    /// UI에서 표시하기 위한 설명을 반환합니다.
+    public var description: String {
+        switch self {
+        case .raw:
+            return "센서 원시값 (중력 포함)"
+        case .motion:
+            return "순수 움직임 (중력 제거)"
+        }
+    }
 } 
