@@ -840,8 +840,8 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         // 연결된 디바이스의 서비스 탐색
         peripheral.discoverServices(nil)
         
-        // 연결 직후에는 데이터 수신을 시작하지 않음
-        // 모니터링 시작 버튼을 눌러야만 데이터 수신 시작
+        // 연결 성공 시 자동으로 데이터 수집을 시작하지 않음
+        // 모니터링 시작 버튼을 눌러야만 데이터 수집 시작
     }
     
     public func startMonitoring() {
@@ -861,28 +861,18 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         self.isMonitoringActive = true
         
         // 선택된 센서들의 데이터 수신 시작
-        if selectedSensors.contains(.eeg) {
-            bluetoothManager.startEEGDataCollection()
+        for sensor in self.selectedSensors {
+            switch sensor {
+            case .eeg:
+                peripheral.discoverCharacteristics([EEG_CHARACTERISTIC_UUID], for: EEG_SERVICE_UUID)
+            case .ppg:
+                peripheral.discoverCharacteristics([PPG_CHARACTERISTIC_UUID], for: PPG_SERVICE_UUID)
+            case .accelerometer:
+                peripheral.discoverCharacteristics([ACCELEROMETER_CHARACTERISTIC_UUID], for: ACCELEROMETER_SERVICE_UUID)
+            case .battery:
+                peripheral.discoverCharacteristics([BATTERY_CHARACTERISTIC_UUID], for: BATTERY_SERVICE_UUID)
+            }
         }
-        if selectedSensors.contains(.ppg) {
-            bluetoothManager.startPPGDataCollection()
-        }
-        if selectedSensors.contains(.accelerometer) {
-            bluetoothManager.startAccelerometerDataCollection()
-        }
-    }
-    
-    public func stopMonitoring() {
-        // 모든 센서의 데이터 수신 중지
-        bluetoothManager.stopEEGDataCollection()
-        bluetoothManager.stopPPGDataCollection()
-        bluetoothManager.stopAccelerometerDataCollection()
-        
-        // 모니터링 상태 업데이트
-        self.isMonitoringActive = false
-        
-        // 데이터 수집 설정 초기화
-        self.disableAllDataCollection()
     }
 }
 
