@@ -471,6 +471,11 @@ extension BluetoothManager: CBPeripheralDelegate {
         for characteristic in characteristics {
             if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
                 peripheral.setNotifyValue(true, for: characteristic)
+                
+                // 배터리 특성이 발견되면 바로 읽기
+                if characteristic.uuid == SensorUUID.batteryChar {
+                    peripheral.readValue(for: characteristic)
+                }
             }
         }
     }
