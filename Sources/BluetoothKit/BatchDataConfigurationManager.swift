@@ -9,7 +9,8 @@ public class BatchDataConfigurationManager {
     
     public enum CollectionMode: String, CaseIterable {
         case sampleCount = "샘플 수"
-        case duration = "시간 (초)"
+        case duration = "초단위"
+        case minuteDuration = "분단위"
         
         public var displayName: String { rawValue }
     }
@@ -401,6 +402,14 @@ public class BatchDataConfigurationManager {
             let expectedSamples = self.getExpectedSamples(for: sensor, duration: duration)
             print("\(prefix): \(sensor.displayName) - \(duration)초마다 배치 수신")
             print("   → \(sensor.displayName): \(duration)초마다 약 \(expectedSamples)개 샘플 예상")
+            
+        case .minuteDuration:
+            let duration = self.getDuration(for: sensor)
+            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration * 60), for: sensor)
+            
+            let expectedSamples = self.getExpectedSamples(for: sensor, duration: duration * 60)
+            print("\(prefix): \(sensor.displayName) - \(duration)분마다 배치 수신")
+            print("   → \(sensor.displayName): \(duration)분마다 약 \(expectedSamples)개 샘플 예상")
         }
     }
     
