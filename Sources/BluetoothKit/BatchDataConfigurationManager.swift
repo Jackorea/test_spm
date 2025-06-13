@@ -99,7 +99,11 @@ public class BatchDataConfigurationManager {
     // MARK: - Public Configuration Methods
     
     public func startMonitoring() {
-        guard !self.selectedSensors.isEmpty else { return }
+        // 선택된 센서가 없으면 기본값으로 초기화
+        if self.selectedSensors.isEmpty {
+            self.selectedSensors = Set(SensorType.allCases)
+            print("ℹ️ 선택된 센서가 없어 모든 센서를 기본값으로 초기화합니다.")
+        }
         
         self.setupBatchDelegate()
         self.configureAllSensors()
