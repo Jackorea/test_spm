@@ -811,7 +811,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     public func didConnect(_ peripheral: CBPeripheral) {
         print("✅ 디바이스 연결 성공: \(peripheral.name ?? "Unknown")")
         self.connectedPeripheral = peripheral
-        self.connectionState = .connected
+        self.connectionState = .connected(peripheral.name ?? "Unknown")
         self.lastConnectedPeripheralIdentifier = peripheral.identifier.uuidString
         
         // 연결 성공 시 자동 재연결 비활성화
