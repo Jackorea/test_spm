@@ -227,10 +227,14 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         } else if !isAutoReconnectEnabled {
             // 자동 재연결이 비활성화된 경우
             connectionState = .disconnected
-        } else {
-            // 예기치 않은 연결해제의 경우에만 자동 재연결
+        } else if let lastPeripheralId = lastConnectedPeripheralIdentifier,
+                  lastPeripheralId == peripheral.identifier {
+            // 마지막으로 연결된 디바이스와 동일한 경우에만 재연결 시도
             connectionState = .reconnecting(deviceName)
             centralManager.connect(peripheral, options: nil)
+        } else {
+            // 마지막으로 연결된 디바이스가 아닌 경우 연결 해제
+            connectionState = .disconnected
         }
         
         if let device = discoveredDevices.first(where: { $0.peripheral.identifier == peripheral.identifier }) {
