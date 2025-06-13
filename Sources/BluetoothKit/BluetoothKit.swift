@@ -265,6 +265,23 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// ```
     @Published public var isBluetoothDisabled: Bool = false
     
+    // MARK: - Private Properties
+    
+    /// 중력 성분 추정값 (X축)
+    private var gravityX: Double = 0
+    
+    /// 중력 성분 추정값 (Y축)
+    private var gravityY: Double = 0
+    
+    /// 중력 성분 추정값 (Z축)
+    private var gravityZ: Double = 0
+    
+    /// 중력 필터링 상수 (0.1 = 느린 적응, 0.9 = 빠른 적응)
+    private let gravityFilterFactor: Double = 0.1
+    
+    /// 중력 추정 초기화 여부
+    private var isGravityInitialized: Bool = false
+    
     // MARK: - Batch Data Collection
     
     /// 배치 단위로 센서 데이터를 수신하는 델리게이트.
@@ -852,6 +869,9 @@ extension BluetoothKit: SensorDataDelegate {
             dataRecorder.recordAccelerometerData([reading])
         }
         
+        // 중력 추정값 업데이트
+        updateGravityEstimate(reading)
+        
         // 현재 모드에 따라 적절한 값을 출력
         if accelerometerMode == .motion {
             // 중력 제거된 움직임 데이터 계산
@@ -868,6 +888,26 @@ extension BluetoothKit: SensorDataDelegate {
             addToAccelerometerBuffer(motionReading)
         } else {
             addToAccelerometerBuffer(reading)
+        }
+    }
+    
+    /// 중력 성분을 추정하고 업데이트하는 함수
+    private func updateGravityEstimate(_ reading: AccelerometerReading) {
+        if !isGravityInitialized {
+            // 첫 번째 읽기: 초기값으로 설정
+            gravityX = Double(reading.x)
+            gravityY = Double(reading.y)
+            gravityZ = Double(reading.z)
+            
+            // 몇 번의 읽기 후 안정화 표시
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                self?.isGravityInitialized = true
+            }
+        } else {
+            // 저역 통과 필터를 사용한 중력 추정
+            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
+            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
+            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
         }
     }
     
