@@ -520,4 +520,40 @@ public class BatchDataConfigurationManager {
             self.sensorConfigurations[sensor] = SensorConfiguration.defaultConfiguration(for: sensor)
         }
     }
+    
+    // MARK: - User Configuration Methods
+    
+    /// 사용자 설정을 직접 적용하는 메서드 (시간 간격 모드)
+    public func applyUserTimeIntervalSettings(_ settings: [SensorType: Int]) {
+        self.selectedCollectionMode = .duration
+        
+        for (sensor, interval) in settings {
+            // 내부 설정 업데이트
+            self.ensureConfigurationExists(for: sensor)
+            self.sensorConfigurations[sensor]?.duration = interval
+            self.sensorConfigurations[sensor]?.durationText = "\(interval)"
+            
+            // BluetoothKit에 직접 적용
+            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(interval), for: sensor)
+            
+            print("🔧 사용자 시간 설정 적용: \(sensor.displayName) - \(interval)초")
+        }
+    }
+    
+    /// 사용자 설정을 직접 적용하는 메서드 (샘플 개수 모드)
+    public func applyUserSampleCountSettings(_ settings: [SensorType: Int]) {
+        self.selectedCollectionMode = .sampleCount
+        
+        for (sensor, count) in settings {
+            // 내부 설정 업데이트
+            self.ensureConfigurationExists(for: sensor)
+            self.sensorConfigurations[sensor]?.sampleCount = count
+            self.sensorConfigurations[sensor]?.sampleCountText = "\(count)"
+            
+            // BluetoothKit에 직접 적용
+            self.bluetoothKit.setDataCollection(sampleCount: count, for: sensor)
+            
+            print("🔧 사용자 샘플 설정 적용: \(sensor.displayName) - \(count)개")
+        }
+    }
 } 
