@@ -724,6 +724,31 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         dataRecorder.updateSelectedSensors(selectedSensors)
     }
     
+    /// 센서 선택을 실시간으로 업데이트합니다.
+    public func updateSensorSelection() {
+        let selectedSensors = Set(dataCollectionConfigs.keys)
+        bluetoothManager.setSelectedSensors(selectedSensors)
+        
+        // 선택되지 않은 센서의 버퍼와 최신 읽기값 초기화
+        if !selectedSensors.contains(.eeg) {
+            eegBuffer.removeAll()
+            latestEEGReading = nil
+            eegTimeBatchManager?.reset()
+        }
+        if !selectedSensors.contains(.ppg) {
+            ppgBuffer.removeAll()
+            latestPPGReading = nil
+            ppgTimeBatchManager?.reset()
+        }
+        if !selectedSensors.contains(.accelerometer) {
+            accelerometerBuffer.removeAll()
+            latestAccelerometerReading = nil
+            accelerometerTimeBatchManager?.reset()
+        }
+        
+        log("센서 선택 업데이트됨: \(selectedSensors.map { $0.rawValue }.joined(separator: ", "))")
+    }
+    
     // MARK: - Private Setup
     
     /// 지정된 센서의 데이터 버퍼를 초기화합니다.
