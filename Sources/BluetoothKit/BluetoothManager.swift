@@ -571,9 +571,13 @@ extension BluetoothManager: CBPeripheralDelegate {
         // 배터리 센서는 항상 활성화
         setNotifyValue(true, for: .battery)
         
-        // 선택된 센서만 활성화
-        for sensorType in selectedSensorTypes {
-            setNotifyValue(true, for: sensorType)
+        // 이전에 모니터링이 활성화되어 있었다면 다시 시작
+        if isMonitoringActive {
+            // 선택된 센서만 활성화
+            for sensorType in selectedSensorTypes {
+                setNotifyValue(true, for: sensorType)
+            }
+            log("모니터링 재시작됨 (선택된 센서만)")
         }
     }
     
