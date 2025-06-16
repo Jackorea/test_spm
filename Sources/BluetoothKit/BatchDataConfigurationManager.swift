@@ -162,8 +162,13 @@ public class BatchDataConfigurationManager {
         
         self.setupBatchDelegate()
         self.configureAllSensors()
+        
+        // ⭐️ 중요: BluetoothKit에 선택된 센서를 설정하여 BLE notify 활성화
+        self.bluetoothKit.setSelectedSensors(self.selectedSensors)
+        
         self.isMonitoringActive = true
         print("✅ 센서 모니터링 시작 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+        print("📡 BLE Notify 활성화: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     public func stopMonitoring() {
@@ -171,8 +176,13 @@ public class BatchDataConfigurationManager {
         self.batchDelegate?.updateSelectedSensors(Set<SensorType>())
         self.bluetoothKit.batchDataDelegate = nil
         self.batchDelegate = nil
+        
+        // ⭐️ 중요: BluetoothKit에서 모든 센서의 BLE notify 비활성화 (배터리 제외)
+        self.bluetoothKit.setSelectedSensors(Set<SensorType>())
+        
         self.isMonitoringActive = false
         print("❌ 센서 모니터링 중지")
+        print("📡 BLE Notify 비활성화: 모든 센서 (배터리 제외)")
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
@@ -461,6 +471,10 @@ public class BatchDataConfigurationManager {
     
     /// 센서 선택 변경에 따라 BluetoothKit의 데이터 수집을 재설정합니다.
     private func reconfigureSensorsForSelection() {
+        // ⭐️ 중요: BluetoothKit에 변경된 센서 선택을 설정하여 BLE notify 재설정
+        self.bluetoothKit.setSelectedSensors(self.selectedSensors)
+        print("📡 BLE Notify 재설정: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
+        
         for sensorType in SensorType.allCases {
             if self.selectedSensors.contains(sensorType) {
                 // 선택된 센서: 데이터 수집 재활성화

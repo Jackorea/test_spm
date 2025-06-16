@@ -585,6 +585,42 @@ public class BluetoothKit: @unchecked Sendable {
         bluetoothManager.enableAutoReconnect(enabled)
     }
     
+    /// 기록 중에 선택된 센서를 업데이트합니다.
+    ///
+    /// 이미 기록이 시작된 상태에서 센서 선택을 변경할 때 사용됩니다.
+    /// 새로 선택된 센서의 데이터만 파일에 기록됩니다.
+    ///
+    /// ## 예시
+    ///
+    /// ```swift
+    /// // 기록 중에 EEG만 선택하도록 변경
+    /// bluetoothKit.updateRecordingSensors([.eeg])
+    /// ```
+    public func updateRecordingSensors() {
+        let selectedSensors = Set(dataCollectionConfigs.keys)
+        dataRecorder.updateSelectedSensors(selectedSensors)
+    }
+    
+    /// 선택된 센서를 설정하여 BLE notify를 활성화/비활성화합니다.
+    ///
+    /// 이 메서드는 BluetoothManager에 센서 선택을 전달하여 실제 BLE 통신에서
+    /// 해당 센서들의 알림을 활성화하거나 비활성화합니다.
+    ///
+    /// - Parameter sensors: 활성화할 센서 타입들의 집합
+    ///
+    /// ## 예시
+    ///
+    /// ```swift
+    /// // EEG와 PPG 센서만 활성화
+    /// bluetoothKit.setSelectedSensors([.eeg, .ppg])
+    /// 
+    /// // 모든 센서 비활성화 (배터리 제외)
+    /// bluetoothKit.setSelectedSensors([])
+    /// ```
+    public func setSelectedSensors(_ sensors: Set<SensorType>) {
+        bluetoothManager.setSelectedSensors(sensors)
+    }
+    
     // MARK: - Batch Data Collection API
     
     /// 시간 간격을 기준으로 배치 데이터 수집을 설정합니다.
@@ -693,22 +729,6 @@ public class BluetoothKit: @unchecked Sendable {
     public func disableAllDataCollection() {
         dataCollectionConfigs.removeAll()
         clearAllBuffers()
-    }
-    
-    /// 기록 중에 선택된 센서를 업데이트합니다.
-    ///
-    /// 이미 기록이 시작된 상태에서 센서 선택을 변경할 때 사용됩니다.
-    /// 새로 선택된 센서의 데이터만 파일에 기록됩니다.
-    ///
-    /// ## 예시
-    ///
-    /// ```swift
-    /// // 기록 중에 EEG만 선택하도록 변경
-    /// bluetoothKit.updateRecordingSensors([.eeg])
-    /// ```
-    public func updateRecordingSensors() {
-        let selectedSensors = Set(dataCollectionConfigs.keys)
-        dataRecorder.updateSelectedSensors(selectedSensors)
     }
     
     // MARK: - Private Setup
