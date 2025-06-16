@@ -256,6 +256,9 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         // 이전에 모니터링이 활성화되어 있었다면 다시 시작
         if isMonitoringActive {
             enableMonitoring()
+        } else {
+            // 모니터링이 비활성화된 상태라도 배터리 센서는 활성화
+            setNotifyValue(true, for: .battery)
         }
         
         if let device = discoveredDevices.first(where: { $0.peripheral.identifier == peripheral.identifier }) {
