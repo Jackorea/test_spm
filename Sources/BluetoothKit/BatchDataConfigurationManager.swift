@@ -141,14 +141,7 @@ public class BatchDataConfigurationManager {
         self.bluetoothKit.stopRecording()
         
         // 펜딩된 변경사항 적용
-        switch pendingChange {
-        case .sensorSelection(let sensors):
-            self.applySensorSelection(sensors)
-        case .sampleCount(let value, let sensor):
-            self.applySampleCountChange(value, for: sensor)
-        case .duration(let value, let sensor):
-            self.applyDurationChange(value, for: sensor)
-        }
+        self.applyConfigurationChange(pendingChange)
         
         // 임시 저장 정리
         self.pendingConfigurationChange = nil
@@ -295,6 +288,49 @@ public class BatchDataConfigurationManager {
         case duration
     }
     
+    /// 기록 중인지 확인하고 필요한 경우 경고 표시
+    private func checkRecordingAndWarn(for change: PendingConfigurationChange) -> Bool {
+        if isMonitoringActive && self.bluetoothKit.isRecording {
+            print("⚠️ 기록 중 설정 변경 시도 감지")
+            self.pendingConfigurationChange = change
+            self.showRecordingChangeWarning = true
+            return true
+        }
+        return false
+    }
+    
+    /// 설정 변경 적용을 위한 공통 메서드
+    private func applyConfigurationChange(_ change: PendingConfigurationChange) {
+        switch change {
+        case .sensorSelection(let sensors):
+            self.applySensorSelection(sensors)
+        case .sampleCount(let value, let sensor):
+            self.applySampleCountChange(value, for: sensor)
+        case .duration(let value, let sensor):
+            self.applyDurationChange(value, for: sensor)
+        }
+    }
+    
+    /// 센서 설정 업데이트를 위한 공통 메서드
+    private func updateSensorConfiguration(for sensor: SensorType, value: Int, valueType: ValueType) {
+        self.ensureConfigurationExists(for: sensor)
+        
+        switch valueType {
+        case .sampleCount:
+            self.sensorConfigurations[sensor]?.sampleCount = value
+            self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
+        case .duration:
+            self.sensorConfigurations[sensor]?.duration = value
+            self.sensorConfigurations[sensor]?.durationText = "\(value)"
+        }
+        
+        // 모니터링 중이고 센서가 선택된 경우에만 재설정
+        if isMonitoringActive && self.selectedSensors.contains(sensor) {
+            self.configureSensor(sensor, isInitial: false)
+            print("🔄 \(valueType == .sampleCount ? "샘플 수" : "시간 설정") 변경 적용: \(sensor.displayName) - \(value)\(valueType == .sampleCount ? "개 샘플" : "초")")
+        }
+    }
+
     /// 기본 설정 초기화
     private func initializeDefaultConfigurations() {
         for sensorType in SensorType.allCases {
@@ -304,12 +340,11 @@ public class BatchDataConfigurationManager {
     
     /// 반응형 바인딩 설정
     private func setupReactiveBindings() {
-        // 설정이 변경될 때마다 자동으로 적용
         Publishers.CombineLatest(
             self.$selectedCollectionMode,
             self.$selectedSensors
         )
-        .dropFirst() // 초기값 무시
+        .dropFirst()
         .sink { [weak self] _, _ in
             if self?.isMonitoringActive == true {
                 self?.applyChanges()
@@ -335,14 +370,7 @@ public class BatchDataConfigurationManager {
         }
         
         let clampedValue = max(range.lowerBound, min(value, range.upperBound))
-        
-        switch valueType {
-        case .sampleCount:
-            self.updateSampleCount(clampedValue, for: sensor, originalValue: value)
-        case .duration:
-            self.updateDuration(clampedValue, for: sensor, originalValue: value)
-        }
-        
+        self.updateSensorConfiguration(for: sensor, value: clampedValue, valueType: valueType)
         return ValidationResult(isValid: true)
     }
     
@@ -395,32 +423,12 @@ public class BatchDataConfigurationManager {
         }
     }
     
-    /// 샘플 수 업데이트
-    private func updateSampleCount(_ value: Int, for sensor: SensorType, originalValue: Int) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.sampleCount = value
-        if value != originalValue {
-            self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
-        }
-    }
-    
-    /// 시간 업데이트
-    private func updateDuration(_ value: Int, for sensor: SensorType, originalValue: Int) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.duration = value
-        if value != originalValue {
-            self.sensorConfigurations[sensor]?.durationText = "\(value)"
-        }
-    }
-    
     /// 센서 선택 변경에 따라 BluetoothKit의 데이터 수집을 재설정합니다.
     private func reconfigureSensorsForSelection() {
         for sensorType in SensorType.allCases {
             if self.selectedSensors.contains(sensorType) {
-                // 선택된 센서: 데이터 수집 재활성화
                 self.configureSensor(sensorType, isInitial: false)
             } else {
-                // 선택 해제된 센서: 데이터 수집 비활성화
                 self.bluetoothKit.disableDataCollection(for: sensorType)
             }
         }
@@ -428,27 +436,11 @@ public class BatchDataConfigurationManager {
     
     /// 샘플 수 변경 적용
     private func applySampleCountChange(_ value: Int, for sensor: SensorType) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.sampleCount = value
-        self.sensorConfigurations[sensor]?.sampleCountText = "\(value)"
-        
-        // 모니터링 중이라면 센서 재설정
-        if isMonitoringActive && self.selectedSensors.contains(sensor) {
-            self.configureSensor(sensor, isInitial: false)
-            print("🔄 샘플 수 변경 적용: \(sensor.displayName) - \(value)개 샘플")
-        }
+        self.updateSensorConfiguration(for: sensor, value: value, valueType: .sampleCount)
     }
     
     /// 시간 변경 적용
     private func applyDurationChange(_ value: Int, for sensor: SensorType) {
-        self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.duration = value
-        self.sensorConfigurations[sensor]?.durationText = "\(value)"
-        
-        // 모니터링 중이라면 센서 재설정
-        if isMonitoringActive && self.selectedSensors.contains(sensor) {
-            self.configureSensor(sensor, isInitial: false)
-            print("🔄 시간 설정 변경 적용: \(sensor.displayName) - \(value)초")
-        }
+        self.updateSensorConfiguration(for: sensor, value: value, valueType: .duration)
     }
 } 
