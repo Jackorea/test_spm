@@ -336,7 +336,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     // MARK: - Unified Notification Methods
     
-    private func notifyOnMainThread<T>(_ action: @escaping () -> T) {
+    private func notifyOnMainThread<T>(_ action: @escaping @Sendable () -> T) {
         if Thread.isMainThread {
             _ = action()
         } else {
