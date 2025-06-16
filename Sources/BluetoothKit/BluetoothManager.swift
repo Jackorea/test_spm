@@ -311,13 +311,10 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             return
         }
         
-        // 모니터링이 비활성화된 경우 데이터 처리하지 않음
-        guard isMonitoringActive else { return }
-        
         do {
             switch characteristic.uuid {
             case SensorUUID.eegNotifyChar:
-                guard selectedSensorTypes.contains(.eeg) else { return }
+                guard isMonitoringActive && selectedSensorTypes.contains(.eeg) else { return }
                 let readings = try dataParser.parseEEGData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -326,7 +323,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.ppgChar:
-                guard selectedSensorTypes.contains(.ppg) else { return }
+                guard isMonitoringActive && selectedSensorTypes.contains(.ppg) else { return }
                 let readings = try dataParser.parsePPGData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -335,7 +332,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.accelChar:
-                guard selectedSensorTypes.contains(.accelerometer) else { return }
+                guard isMonitoringActive && selectedSensorTypes.contains(.accelerometer) else { return }
                 let readings = try dataParser.parseAccelerometerData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -344,6 +341,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.batteryChar:
+                // 배터리 데이터는 모니터링 상태와 관계없이 항상 처리
                 let reading = try dataParser.parseBatteryData(data)
                 notifySensorData(reading) { [weak self] data in
                     self?.sensorDataDelegate?.didReceiveBatteryData(data)
@@ -551,16 +549,8 @@ extension BluetoothManager: CBPeripheralDelegate {
     internal func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         
-        // 배터리 서비스를 먼저 찾아서 처리
-        if let batteryService = services.first(where: { $0.uuid == CBUUID(string: "180F") }) {
-            peripheral.discoverCharacteristics([CBUUID(string: "2A19")], for: batteryService)
-        }
-        
-        // 나머지 서비스들 처리
         for service in services {
-            if service.uuid != CBUUID(string: "180F") {  // 배터리 서비스가 아닌 경우
-                peripheral.discoverCharacteristics(nil, for: service)
-            }
+            peripheral.discoverCharacteristics(nil, for: service)
         }
     }
     
@@ -577,34 +567,17 @@ extension BluetoothManager: CBPeripheralDelegate {
                           error: Error?) {
         guard let characteristics = service.characteristics else { return }
         
-        // 배터리 서비스인 경우
-        if service.uuid == CBUUID(string: "180F") {
-            if let batteryChar = characteristics.first(where: { $0.uuid == CBUUID(string: "2A19") }) {
-                peripheral.setNotifyValue(true, for: batteryChar)
-                peripheral.readValue(for: batteryChar)
-                log("배터리 특성 발견 및 읽기 시작")
+        // 배터리 센서는 항상 활성화하고 바로 읽기
+        for characteristic in characteristics {
+            if characteristic.uuid == SensorUUID.batteryChar {
+                peripheral.setNotifyValue(true, for: characteristic)
+                peripheral.readValue(for: characteristic)  // 배터리 값 즉시 읽기
             }
-            return
         }
         
-        // 다른 센서들의 특성 처리
-        for characteristic in characteristics {
-            switch characteristic.uuid {
-            case SensorUUID.eegNotifyChar:
-                if selectedSensorTypes.contains(.eeg) {
-                    peripheral.setNotifyValue(true, for: characteristic)
-                }
-            case SensorUUID.ppgChar:
-                if selectedSensorTypes.contains(.ppg) {
-                    peripheral.setNotifyValue(true, for: characteristic)
-                }
-            case SensorUUID.accelChar:
-                if selectedSensorTypes.contains(.accelerometer) {
-                    peripheral.setNotifyValue(true, for: characteristic)
-                }
-            default:
-                break
-            }
+        // 선택된 센서만 활성화
+        for sensorType in selectedSensorTypes {
+            setNotifyValue(true, for: sensorType)
         }
     }
     
