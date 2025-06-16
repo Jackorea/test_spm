@@ -218,8 +218,8 @@ internal class DataRecorder: @unchecked Sendable {
         // Write to CSV
         if let writer = csvWriters[sensorType] {
             let timestampValue = timestamp.timeIntervalSince1970
-            let csvValues = [timestampValue] + csvData.map { "\($0)" }
-            let line = csvValues.joined(separator: ",") + "\n"
+            let csvStringValues = [String(timestampValue)] + csvData.map { String(describing: $0) }
+            let line = csvStringValues.joined(separator: ",") + "\n"
             writer.write(line)
         }
     }
