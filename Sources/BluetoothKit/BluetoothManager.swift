@@ -186,17 +186,21 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     /// 센서 모니터링을 비활성화합니다.
     public func disableMonitoring() {
-        guard let peripheral = connectedPeripheral else { return }
         isMonitoringActive = false
         
-        // 모든 센서 특성에 대해 알림 비활성화
-        for service in peripheral.services ?? [] {
-            for characteristic in service.characteristics ?? [] {
-                if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
-                    peripheral.setNotifyValue(false, for: characteristic)
+        // 배터리 센서를 제외한 모든 센서의 알림을 비활성화
+        if let peripheral = connectedPeripheral {
+            for service in peripheral.services ?? [] {
+                for characteristic in service.characteristics ?? [] {
+                    // 배터리 센서는 제외
+                    if characteristic.uuid != SensorUUID.batteryChar {
+                        peripheral.setNotifyValue(false, for: characteristic)
+                    }
                 }
             }
         }
+        
+        log("모니터링 비활성화됨 (배터리 센서 제외)")
     }
     
     // MARK: - Private Methods

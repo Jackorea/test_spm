@@ -667,6 +667,23 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     /// 센서 모니터링을 비활성화합니다.
     public func disableMonitoring() {
         bluetoothManager.disableMonitoring()
+        
+        // 배터리를 제외한 모든 센서 버퍼 초기화
+        eegBuffer.removeAll()
+        ppgBuffer.removeAll()
+        accelerometerBuffer.removeAll()
+        
+        // 배터리를 제외한 모든 센서의 최신 읽기값 초기화
+        latestEEGReading = nil
+        latestPPGReading = nil
+        latestAccelerometerReading = nil
+        
+        // 배터리를 제외한 모든 센서의 시간 기반 배치 관리자 초기화
+        eegTimeBatchManager?.reset()
+        ppgTimeBatchManager?.reset()
+        accelerometerTimeBatchManager?.reset()
+        
+        log("모니터링 비활성화됨 (배터리 센서 제외)")
     }
     
     /// 기록 중에 선택된 센서를 업데이트합니다.
