@@ -211,6 +211,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         // 선택 해제된 센서의 notify 비활성화
         for sensorType in deselectedSensors {
             setNotifyValue(false, for: sensorType)
+            log("센서 선택 해제됨: \(sensorType.rawValue)")
         }
         
         // 새로 선택된 센서의 notify 활성화
@@ -218,44 +219,12 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         if isMonitoringActive {
             for sensorType in newlySelectedSensors {
                 setNotifyValue(true, for: sensorType)
-                // 새로 선택된 센서의 특성을 즉시 읽어서 데이터 수신 시작
-                if let service = peripheral.services?.first(where: { $0.uuid == getServiceUUID(for: sensorType) }),
-                   let characteristic = service.characteristics?.first(where: { $0.uuid == getCharacteristicUUID(for: sensorType) }) {
-                    peripheral.readValue(for: characteristic)
-                }
+                log("센서 선택됨: \(sensorType.rawValue)")
             }
         }
         
         selectedSensorTypes = sensors
         log("센서 선택 업데이트됨: \(sensors.map { $0.rawValue }.joined(separator: ", "))")
-    }
-    
-    /// 센서 타입에 따른 서비스 UUID를 반환합니다.
-    private func getServiceUUID(for sensorType: SensorType) -> CBUUID {
-        switch sensorType {
-        case .eeg:
-            return SensorUUID.eegService
-        case .ppg:
-            return SensorUUID.ppgService
-        case .accelerometer:
-            return SensorUUID.accelService
-        case .battery:
-            return SensorUUID.batteryService
-        }
-    }
-    
-    /// 센서 타입에 따른 특성 UUID를 반환합니다.
-    private func getCharacteristicUUID(for sensorType: SensorType) -> CBUUID {
-        switch sensorType {
-        case .eeg:
-            return SensorUUID.eegNotifyChar
-        case .ppg:
-            return SensorUUID.ppgChar
-        case .accelerometer:
-            return SensorUUID.accelChar
-        case .battery:
-            return SensorUUID.batteryChar
-        }
     }
     
     // MARK: - Private Methods
@@ -346,6 +315,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         do {
             switch characteristic.uuid {
             case SensorUUID.eegNotifyChar:
+                // EEG가 선택된 경우에만 처리
+                guard selectedSensorTypes.contains(.eeg) else { return }
                 let readings = try dataParser.parseEEGData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -354,6 +325,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.ppgChar:
+                // PPG가 선택된 경우에만 처리
+                guard selectedSensorTypes.contains(.ppg) else { return }
                 let readings = try dataParser.parsePPGData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -362,6 +335,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.accelChar:
+                // Accelerometer가 선택된 경우에만 처리
+                guard selectedSensorTypes.contains(.accelerometer) else { return }
                 let readings = try dataParser.parseAccelerometerData(data)
                 for reading in readings {
                     notifySensorData(reading) { [weak self] data in
@@ -370,6 +345,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.batteryChar:
+                // 배터리는 항상 처리
                 let reading = try dataParser.parseBatteryData(data)
                 notifySensorData(reading) { [weak self] data in
                     self?.sensorDataDelegate?.didReceiveBatteryData(data)
