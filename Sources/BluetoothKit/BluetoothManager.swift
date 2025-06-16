@@ -251,7 +251,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         
         // 서비스 검색을 시작합니다
         peripheral.delegate = self
-        peripheral.discoverServices(nil)
+        peripheral.discoverServices([SensorUUID.batteryService])  // 배터리 서비스만 먼저 검색
         
         if let device = discoveredDevices.first(where: { $0.peripheral.identifier == peripheral.identifier }) {
             notifyDeviceConnected(device)
@@ -541,8 +541,16 @@ extension BluetoothManager: CBPeripheralDelegate {
     internal func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         
+        // 배터리 서비스가 발견되면 먼저 처리
+        if let batteryService = services.first(where: { $0.uuid == SensorUUID.batteryService }) {
+            peripheral.discoverCharacteristics([SensorUUID.batteryChar], for: batteryService)
+        }
+        
+        // 나머지 서비스들도 검색
         for service in services {
-            peripheral.discoverCharacteristics(nil, for: service)
+            if service.uuid != SensorUUID.batteryService {
+                peripheral.discoverCharacteristics(nil, for: service)
+            }
         }
     }
     
@@ -559,13 +567,14 @@ extension BluetoothManager: CBPeripheralDelegate {
                           error: Error?) {
         guard let characteristics = service.characteristics else { return }
         
-        // 배터리 센서는 항상 활성화하고 초기값 읽기
-        for characteristic in characteristics {
-            if characteristic.uuid == SensorUUID.batteryChar {
-                peripheral.setNotifyValue(true, for: characteristic)
-                // 배터리 초기값 읽기
-                peripheral.readValue(for: characteristic)
-                break
+        // 배터리 서비스인 경우 즉시 읽기
+        if service.uuid == SensorUUID.batteryService {
+            for characteristic in characteristics {
+                if characteristic.uuid == SensorUUID.batteryChar {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                    peripheral.readValue(for: characteristic)
+                    break
+                }
             }
         }
         
