@@ -618,7 +618,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     private func processSensorData<T>(_ reading: T, for sensorType: SensorType, 
                                    recordingAction: (T) -> Void,
-                                   batchAction: ([T]) -> Void) where T: Sendable {
+                                   batchAction: @escaping @Sendable ([T]) -> Void) where T: Sendable {
         // 최신 읽기값 업데이트
         updateLatestReading(reading, for: sensorType)
         
@@ -629,7 +629,7 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         
         // 배치 처리
         if let batch = sensorBuffers.addSample(reading, for: sensorType) {
-            DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async {
                 batchAction(batch)
             }
         }
