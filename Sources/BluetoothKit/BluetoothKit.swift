@@ -437,7 +437,7 @@ public class BluetoothKit: @unchecked Sendable {
     /// ```
     public init() {
         self.configuration = .default
-        self.logger = InternalLogger(isEnabled: false)  // 프로덕션 최적화
+        self.logger = InternalLogger(isEnabled: true)  // 디버깅을 위해 로거 활성화
         self.bluetoothManager = BluetoothManager(configuration: configuration, logger: logger)
         self.dataRecorder = DataRecorder(logger: logger)
         
@@ -619,6 +619,13 @@ public class BluetoothKit: @unchecked Sendable {
     /// ```
     public func setSelectedSensors(_ sensors: Set<SensorType>) {
         bluetoothManager.setSelectedSensors(sensors)
+        
+        // 센서가 선택되면 모니터링을 활성화, 비어있으면 비활성화
+        if !sensors.isEmpty {
+            bluetoothManager.enableMonitoring()
+        } else {
+            bluetoothManager.disableMonitoring()
+        }
     }
     
     // MARK: - Batch Data Collection API
