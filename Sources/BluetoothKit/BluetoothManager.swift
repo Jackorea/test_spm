@@ -174,14 +174,29 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         guard let peripheral = connectedPeripheral else { return }
         isMonitoringActive = true
         
-        // 모든 센서 특성에 대해 알림 활성화
+        // 선택된 센서 특성에 대해서만 알림 활성화
         for service in peripheral.services ?? [] {
             for characteristic in service.characteristics ?? [] {
-                if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
+                // 배터리 센서는 항상 활성화
+                if characteristic.uuid == SensorUUID.batteryChar {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                    continue
+                }
+                
+                // 선택된 센서만 활성화
+                if dataCollectionConfigs[.eeg] != nil && characteristic.uuid == SensorUUID.eegNotifyChar {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+                if dataCollectionConfigs[.ppg] != nil && characteristic.uuid == SensorUUID.ppgChar {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+                if dataCollectionConfigs[.accelerometer] != nil && characteristic.uuid == SensorUUID.accelChar {
                     peripheral.setNotifyValue(true, for: characteristic)
                 }
             }
         }
+        
+        log("모니터링 활성화됨 (선택된 센서만)")
     }
     
     /// 센서 모니터링을 비활성화합니다.

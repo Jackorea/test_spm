@@ -661,7 +661,25 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
     
     /// 센서 모니터링을 활성화합니다.
     public func enableMonitoring() {
+        // 선택되지 않은 센서의 버퍼와 최신 읽기값 초기화
+        if dataCollectionConfigs[.eeg] == nil {
+            eegBuffer.removeAll()
+            latestEEGReading = nil
+            eegTimeBatchManager?.reset()
+        }
+        if dataCollectionConfigs[.ppg] == nil {
+            ppgBuffer.removeAll()
+            latestPPGReading = nil
+            ppgTimeBatchManager?.reset()
+        }
+        if dataCollectionConfigs[.accelerometer] == nil {
+            accelerometerBuffer.removeAll()
+            latestAccelerometerReading = nil
+            accelerometerTimeBatchManager?.reset()
+        }
+        
         bluetoothManager.enableMonitoring()
+        log("모니터링 활성화됨 (선택된 센서만)")
     }
     
     /// 센서 모니터링을 비활성화합니다.
