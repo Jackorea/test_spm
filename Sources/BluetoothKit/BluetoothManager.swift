@@ -569,8 +569,13 @@ extension BluetoothManager: CBPeripheralDelegate {
                           error: Error?) {
         guard let characteristics = service.characteristics else { return }
         
-        // 배터리 센서는 항상 활성화
-        setNotifyValue(true, for: .battery)
+        // 배터리 센서는 항상 활성화하고 바로 읽기
+        for characteristic in characteristics {
+            if characteristic.uuid == SensorUUID.batteryChar {
+                peripheral.setNotifyValue(true, for: characteristic)
+                peripheral.readValue(for: characteristic)  // 배터리 값 즉시 읽기
+            }
+        }
         
         // 선택된 센서만 활성화
         for sensorType in selectedSensorTypes {
