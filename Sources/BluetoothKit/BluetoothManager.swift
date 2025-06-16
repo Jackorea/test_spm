@@ -223,7 +223,64 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     /// 선택된 센서 타입을 설정합니다.
     public func setSelectedSensors(_ sensors: Set<SensorType>) {
+        guard let peripheral = connectedPeripheral else { return }
+        
+        // 이전에 선택되지 않았던 센서들의 notify 활성화
+        for sensor in sensors {
+            if !selectedSensorTypes.contains(sensor) {
+                switch sensor {
+                case .eeg:
+                    if let characteristic = findCharacteristic(SensorUUID.eegNotifyChar, in: peripheral) {
+                        peripheral.setNotifyValue(true, for: characteristic)
+                    }
+                case .ppg:
+                    if let characteristic = findCharacteristic(SensorUUID.ppgChar, in: peripheral) {
+                        peripheral.setNotifyValue(true, for: characteristic)
+                    }
+                case .accelerometer:
+                    if let characteristic = findCharacteristic(SensorUUID.accelChar, in: peripheral) {
+                        peripheral.setNotifyValue(true, for: characteristic)
+                    }
+                case .battery:
+                    break // 배터리는 항상 활성화
+                }
+            }
+        }
+        
+        // 선택 해제된 센서들의 notify 비활성화
+        for sensor in selectedSensorTypes {
+            if !sensors.contains(sensor) {
+                switch sensor {
+                case .eeg:
+                    if let characteristic = findCharacteristic(SensorUUID.eegNotifyChar, in: peripheral) {
+                        peripheral.setNotifyValue(false, for: characteristic)
+                    }
+                case .ppg:
+                    if let characteristic = findCharacteristic(SensorUUID.ppgChar, in: peripheral) {
+                        peripheral.setNotifyValue(false, for: characteristic)
+                    }
+                case .accelerometer:
+                    if let characteristic = findCharacteristic(SensorUUID.accelChar, in: peripheral) {
+                        peripheral.setNotifyValue(false, for: characteristic)
+                    }
+                case .battery:
+                    break // 배터리는 항상 활성화
+                }
+            }
+        }
+        
         selectedSensorTypes = sensors
+        log("선택된 센서 업데이트됨: \(sensors.map { $0.rawValue }.joined(separator: ", "))")
+    }
+    
+    /// 특정 UUID를 가진 특성을 찾는 헬퍼 메서드
+    private func findCharacteristic(_ uuid: CBUUID, in peripheral: CBPeripheral) -> CBCharacteristic? {
+        for service in peripheral.services ?? [] {
+            if let characteristic = service.characteristics?.first(where: { $0.uuid == uuid }) {
+                return characteristic
+            }
+        }
+        return nil
     }
     
     // MARK: - Private Methods
