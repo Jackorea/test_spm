@@ -251,7 +251,10 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         
         // 서비스 검색을 시작합니다
         peripheral.delegate = self
-        peripheral.discoverServices([SensorUUID.batteryService])  // 배터리 서비스만 먼저 검색
+        peripheral.discoverServices(nil)
+        
+        // 연결 시 모니터링 상태를 항상 비활성화로 초기화
+        isMonitoringActive = false
         
         if let device = discoveredDevices.first(where: { $0.peripheral.identifier == peripheral.identifier }) {
             notifyDeviceConnected(device)
@@ -270,6 +273,11 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         
         if connectedPeripheral?.identifier == peripheral.identifier {
             connectedPeripheral = nil
+        }
+        
+        // 연결 해제 시 모니터링 중단
+        if isMonitoringActive {
+            disableMonitoring()
         }
         
         // 수동 연결해제인지 확인
@@ -541,16 +549,8 @@ extension BluetoothManager: CBPeripheralDelegate {
     internal func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         
-        // 배터리 서비스가 발견되면 먼저 처리
-        if let batteryService = services.first(where: { $0.uuid == SensorUUID.batteryService }) {
-            peripheral.discoverCharacteristics([SensorUUID.batteryChar], for: batteryService)
-        }
-        
-        // 나머지 서비스들도 검색
         for service in services {
-            if service.uuid != SensorUUID.batteryService {
-                peripheral.discoverCharacteristics(nil, for: service)
-            }
+            peripheral.discoverCharacteristics(nil, for: service)
         }
     }
     
@@ -567,16 +567,8 @@ extension BluetoothManager: CBPeripheralDelegate {
                           error: Error?) {
         guard let characteristics = service.characteristics else { return }
         
-        // 배터리 서비스인 경우 즉시 읽기
-        if service.uuid == SensorUUID.batteryService {
-            for characteristic in characteristics {
-                if characteristic.uuid == SensorUUID.batteryChar {
-                    peripheral.setNotifyValue(true, for: characteristic)
-                    peripheral.readValue(for: characteristic)
-                    break
-                }
-            }
-        }
+        // 배터리 센서는 항상 활성화
+        setNotifyValue(true, for: .battery)
         
         // 선택된 센서만 활성화
         for sensorType in selectedSensorTypes {
