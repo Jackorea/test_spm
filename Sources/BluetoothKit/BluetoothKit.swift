@@ -678,6 +678,10 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
             accelerometerTimeBatchManager?.reset()
         }
         
+        // 선택된 센서 정보를 BluetoothManager에 전달
+        let selectedSensors = Set(dataCollectionConfigs.keys)
+        bluetoothManager.setSelectedSensors(selectedSensors)
+        
         bluetoothManager.enableMonitoring()
         log("모니터링 활성화됨 (선택된 센서만)")
     }

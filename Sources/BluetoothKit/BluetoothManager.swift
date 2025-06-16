@@ -40,6 +40,9 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     // 센서 모니터링 상태
     private var isMonitoringActive: Bool = false
     
+    // 선택된 센서 타입들
+    private var selectedSensorTypes: Set<SensorType> = []
+    
     // MARK: - Initialization
     
     /// 새로운 BluetoothManager 인스턴스를 생성합니다.
@@ -184,13 +187,13 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
                 // 선택된 센서만 활성화
-                if dataCollectionConfigs[.eeg] != nil && characteristic.uuid == SensorUUID.eegNotifyChar {
+                if selectedSensorTypes.contains(.eeg) && characteristic.uuid == SensorUUID.eegNotifyChar {
                     peripheral.setNotifyValue(true, for: characteristic)
                 }
-                if dataCollectionConfigs[.ppg] != nil && characteristic.uuid == SensorUUID.ppgChar {
+                if selectedSensorTypes.contains(.ppg) && characteristic.uuid == SensorUUID.ppgChar {
                     peripheral.setNotifyValue(true, for: characteristic)
                 }
-                if dataCollectionConfigs[.accelerometer] != nil && characteristic.uuid == SensorUUID.accelChar {
+                if selectedSensorTypes.contains(.accelerometer) && characteristic.uuid == SensorUUID.accelChar {
                     peripheral.setNotifyValue(true, for: characteristic)
                 }
             }
@@ -216,6 +219,11 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         }
         
         log("모니터링 비활성화됨 (배터리 센서 제외)")
+    }
+    
+    /// 선택된 센서 타입을 설정합니다.
+    public func setSelectedSensors(_ sensors: Set<SensorType>) {
+        selectedSensorTypes = sensors
     }
     
     // MARK: - Private Methods
