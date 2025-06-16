@@ -204,22 +204,14 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     public func setSelectedSensors(_ sensors: Set<SensorType>) {
         guard let peripheral = connectedPeripheral else { return }
         
-        // 이전 선택과 새로운 선택의 차이를 계산
-        let deselectedSensors = selectedSensorTypes.subtracting(sensors)
-        let newlySelectedSensors = sensors.subtracting(selectedSensorTypes)
-        
-        // 선택 해제된 센서의 notify 비활성화
-        for sensorType in deselectedSensors {
-            setNotifyValue(false, for: sensorType)
-            log("센서 선택 해제됨: \(sensorType.rawValue)")
-        }
-        
-        // 새로 선택된 센서의 notify 활성화
-        // 모니터링이 활성화된 상태에서만 notify를 활성화
-        if isMonitoringActive {
-            for sensorType in newlySelectedSensors {
+        // 모든 센서의 notify 상태를 업데이트
+        for sensorType in SensorType.allCases {
+            if sensorType == .battery {
+                // 배터리는 항상 활성화
                 setNotifyValue(true, for: sensorType)
-                log("센서 선택됨: \(sensorType.rawValue)")
+            } else {
+                // 다른 센서들은 선택 여부에 따라 활성화/비활성화
+                setNotifyValue(sensors.contains(sensorType), for: sensorType)
             }
         }
         
@@ -315,7 +307,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         do {
             switch characteristic.uuid {
             case SensorUUID.eegNotifyChar:
-                // EEG가 선택된 경우에만 처리
                 guard selectedSensorTypes.contains(.eeg) else { return }
                 let readings = try dataParser.parseEEGData(data)
                 for reading in readings {
@@ -325,7 +316,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.ppgChar:
-                // PPG가 선택된 경우에만 처리
                 guard selectedSensorTypes.contains(.ppg) else { return }
                 let readings = try dataParser.parsePPGData(data)
                 for reading in readings {
@@ -335,7 +325,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.accelChar:
-                // Accelerometer가 선택된 경우에만 처리
                 guard selectedSensorTypes.contains(.accelerometer) else { return }
                 let readings = try dataParser.parseAccelerometerData(data)
                 for reading in readings {
@@ -345,7 +334,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 }
                 
             case SensorUUID.batteryChar:
-                // 배터리는 항상 처리
                 let reading = try dataParser.parseBatteryData(data)
                 notifySensorData(reading) { [weak self] data in
                     self?.sensorDataDelegate?.didReceiveBatteryData(data)
