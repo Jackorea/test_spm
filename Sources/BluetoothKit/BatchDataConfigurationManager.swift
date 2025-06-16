@@ -131,19 +131,19 @@ public class BatchDataConfigurationManager {
         selectedCollectionMode = mode
     }
     
-    // MARK: - Configuration Access (통합된 getter/setter)
+    // MARK: - Configuration Access (통합된 getter/setter - Internal 접근용)
     
-    public func getValue(for sensor: SensorType, type: ValueType) -> Int {
+    internal func getValue(for sensor: SensorType, type: ValueType) -> Int {
         let config = sensorConfigurations[sensor] ?? SensorConfiguration.defaultConfiguration(for: sensor)
         return type == .sampleCount ? config.sampleCount : config.duration
     }
     
-    public func getValueText(for sensor: SensorType, type: ValueType) -> String {
+    internal func getValueText(for sensor: SensorType, type: ValueType) -> String {
         let config = sensorConfigurations[sensor] ?? SensorConfiguration.defaultConfiguration(for: sensor)
         return type == .sampleCount ? config.sampleCountText : config.durationText
     }
     
-    public func setValue(_ value: Int, for sensor: SensorType, type: ValueType) {
+    internal func setValue(_ value: Int, for sensor: SensorType, type: ValueType) {
         let changeType: ConfigurationChangeType = type == .sampleCount ? 
             .sampleCount(value, sensor) : .duration(value, sensor)
         
@@ -151,7 +151,7 @@ public class BatchDataConfigurationManager {
         updateSensorConfiguration(for: sensor, value: value, type: type)
     }
     
-    public func setValueText(_ text: String, for sensor: SensorType, type: ValueType) {
+    internal func setValueText(_ text: String, for sensor: SensorType, type: ValueType) {
         ensureConfigurationExists(for: sensor)
         if type == .sampleCount {
             sensorConfigurations[sensor]?.sampleCountText = text
@@ -196,7 +196,7 @@ public class BatchDataConfigurationManager {
     
     // MARK: - Validation Methods (통합)
     
-    public func validateValue(_ text: String, for sensor: SensorType, type: ValueType) -> ValidationResult {
+    internal func validateValue(_ text: String, for sensor: SensorType, type: ValueType) -> ValidationResult {
         guard let value = Int(text), value > 0 else {
             if !text.isEmpty {
                 return ValidationResult(isValid: false, message: "유효한 숫자를 입력해주세요")
