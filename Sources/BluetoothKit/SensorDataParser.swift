@@ -15,6 +15,102 @@ internal class SensorDataParser: @unchecked Sendable {
         self.configuration = configuration
     }
     
+    // MARK: - Parsing Configuration
+    
+    private struct ParsingParams {
+        let sensorName: String
+        let sampleSize: Int
+        let expectedPacketSize: Int
+        let sampleRate: Double
+    }
+    
+    private var eegParams: ParsingParams {
+        ParsingParams(
+            sensorName: "EEG",
+            sampleSize: configuration.eegSampleSize,
+            expectedPacketSize: configuration.eegPacketSize,
+            sampleRate: configuration.eegSampleRate
+        )
+    }
+    
+    private var ppgParams: ParsingParams {
+        ParsingParams(
+            sensorName: "PPG",
+            sampleSize: configuration.ppgSampleSize,
+            expectedPacketSize: configuration.ppgPacketSize,
+            sampleRate: configuration.ppgSampleRate
+        )
+    }
+    
+    private var accelParams: ParsingParams {
+        ParsingParams(
+            sensorName: "ACCEL",
+            sampleSize: 6, // Fixed accelerometer sample size
+            expectedPacketSize: 0, // Not used for accelerometer
+            sampleRate: configuration.accelerometerSampleRate
+        )
+    }
+    
+    // MARK: - Common Parsing Helpers
+    
+    private struct ParsedPacketHeader {
+        let timestamp: Double
+        let actualSampleCount: Int
+    }
+    
+    private func parsePacketHeader(
+        from bytes: [UInt8],
+        params: ParsingParams,
+        headerSize: Int = 4
+    ) throws -> ParsedPacketHeader {
+        // Validate minimum packet size
+        guard bytes.count >= headerSize + params.sampleSize else {
+            throw BluetoothKitError.dataParsingFailed(
+                "\(params.sensorName) packet too short: \(bytes.count) bytes (minimum: \(headerSize + params.sampleSize))"
+            )
+        }
+        
+        // Calculate actual sample count
+        let dataWithoutHeader = bytes.count - headerSize
+        let actualSampleCount = dataWithoutHeader / params.sampleSize
+        
+        // Log packet size warnings for EEG/PPG only
+        if params.expectedPacketSize > 0 && bytes.count != params.expectedPacketSize {
+            let expectedSampleCount = (params.expectedPacketSize - headerSize) / params.sampleSize
+            print("⚠️ \(params.sensorName) packet size: \(bytes.count) bytes (expected: \(params.expectedPacketSize)), processing \(actualSampleCount) samples (expected: \(expectedSampleCount))")
+        }
+        
+        // Extract timestamp from packet header (Little Endian)
+        let timeRaw = UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24
+        let timestamp = Double(timeRaw) / configuration.timestampDivisor / configuration.millisecondsToSeconds
+        
+        return ParsedPacketHeader(timestamp: timestamp, actualSampleCount: actualSampleCount)
+    }
+    
+    private func validateSampleBounds(
+        sampleIndex: Int,
+        sampleSize: Int,
+        headerSize: Int,
+        bytesCount: Int,
+        sensorName: String
+    ) -> Bool {
+        let i = headerSize + (sampleIndex * sampleSize)
+        guard i + sampleSize <= bytesCount else {
+            print("⚠️ \(sensorName) sample \(sampleIndex + 1) incomplete, skipping remaining samples")
+            return false
+        }
+        return true
+    }
+    
+    private func parse24BitSigned(_ byte1: UInt8, _ byte2: UInt8, _ byte3: UInt8) -> Int32 {
+        var value = Int32(byte1) << 16 | Int32(byte2) << 8 | Int32(byte3)
+        // Handle 24-bit signed values (MSB sign extension)
+        if (value & 0x800000) != 0 {
+            value -= 0x1000000
+        }
+        return value
+    }
+    
     // MARK: - EEG Data Parsing
     
     /// Parses raw EEG data packets into structured readings.
@@ -24,60 +120,35 @@ internal class SensorDataParser: @unchecked Sendable {
     /// - Throws: `BluetoothKitError.dataParsingFailed` if packet format is invalid
     internal func parseEEGData(_ data: Data) throws -> [EEGReading] {
         let bytes = [UInt8](data)
-        
-        // Check minimum packet size (header + at least one sample)
+        let params = eegParams
         let headerSize = 4
-        guard bytes.count >= headerSize + configuration.eegSampleSize else {
-            throw BluetoothKitError.dataParsingFailed("EEG packet too short: \(bytes.count) bytes (minimum: \(headerSize + configuration.eegSampleSize))")
-        }
         
-        // Calculate actual number of samples available
-        let dataWithoutHeader = bytes.count - headerSize
-        let actualSampleCount = dataWithoutHeader / configuration.eegSampleSize
-        let expectedSampleCount = (configuration.eegPacketSize - headerSize) / configuration.eegSampleSize
-        
-        // Log if packet size differs from expected
-        if bytes.count != configuration.eegPacketSize {
-            print("⚠️ EEG packet size: \(bytes.count) bytes (expected: \(configuration.eegPacketSize)), processing \(actualSampleCount) samples (expected: \(expectedSampleCount))")
-        }
-        
-        // Extract timestamp from packet header
-        let timeRaw = UInt32(bytes[3]) << 24 | UInt32(bytes[2]) << 16 | UInt32(bytes[1]) << 8 | UInt32(bytes[0])
-        var timestamp = Double(timeRaw) / configuration.timestampDivisor / configuration.millisecondsToSeconds
-        
+        let header = try parsePacketHeader(from: bytes, params: params, headerSize: headerSize)
+        var timestamp = header.timestamp
         var readings: [EEGReading] = []
         
-        // Parse only the available samples
-        for sampleIndex in 0..<actualSampleCount {
-            let i = headerSize + (sampleIndex * configuration.eegSampleSize)
+        for sampleIndex in 0..<header.actualSampleCount {
+            guard validateSampleBounds(
+                sampleIndex: sampleIndex,
+                sampleSize: params.sampleSize,
+                headerSize: headerSize,
+                bytesCount: bytes.count,
+                sensorName: params.sensorName
+            ) else { break }
             
-            // Ensure we don't exceed array bounds
-            guard i + configuration.eegSampleSize <= bytes.count else {
-                print("⚠️ EEG sample \(sampleIndex + 1) incomplete, skipping remaining samples")
-                break
-            }
+            let i = headerSize + (sampleIndex * params.sampleSize)
             
-            // lead-off (1 byte) - sensor connection status
+            // Parse EEG-specific data
             let leadOffRaw = bytes[i]
-            let leadOffNormalized = leadOffRaw > 0  // true if any lead is disconnected
+            let leadOffNormalized = leadOffRaw > 0
             
-            // CH1: 3 bytes (Big Endian)
-            var ch1Raw = Int32(bytes[i+1]) << 16 | Int32(bytes[i+2]) << 8 | Int32(bytes[i+3])
+            let ch1Raw = parse24BitSigned(bytes[i+1], bytes[i+2], bytes[i+3])
+            let ch2Raw = parse24BitSigned(bytes[i+4], bytes[i+5], bytes[i+6])
             
-            // CH2: 3 bytes (Big Endian)  
-            var ch2Raw = Int32(bytes[i+4]) << 16 | Int32(bytes[i+5]) << 8 | Int32(bytes[i+6])
-            
-            // Handle 24-bit signed values (MSB sign extension)
-            if (ch1Raw & 0x800000) != 0 {
-                ch1Raw -= 0x1000000
-            }
-            if (ch2Raw & 0x800000) != 0 {
-                ch2Raw -= 0x1000000
-            }
-            
-            // Convert to voltage using configuration parameters
-            let ch1uV = Double(ch1Raw) * configuration.eegVoltageReference / configuration.eegGain / configuration.eegResolution * configuration.microVoltMultiplier
-            let ch2uV = Double(ch2Raw) * configuration.eegVoltageReference / configuration.eegGain / configuration.eegResolution * configuration.microVoltMultiplier
+            // Convert to voltage
+            let voltageConversionFactor = configuration.eegVoltageReference / configuration.eegGain / configuration.eegResolution * configuration.microVoltMultiplier
+            let ch1uV = Double(ch1Raw) * voltageConversionFactor
+            let ch2uV = Double(ch2Raw) * voltageConversionFactor
             
             let reading = EEGReading(
                 channel1: ch1uV,
@@ -89,9 +160,7 @@ internal class SensorDataParser: @unchecked Sendable {
             )
             
             readings.append(reading)
-            
-            // Increment timestamp for next sample
-            timestamp += 1.0 / configuration.eegSampleRate
+            timestamp += 1.0 / params.sampleRate
         }
         
         return readings
@@ -106,41 +175,27 @@ internal class SensorDataParser: @unchecked Sendable {
     /// - Throws: `BluetoothKitError.dataParsingFailed` if packet format is invalid
     internal func parsePPGData(_ data: Data) throws -> [PPGReading] {
         let bytes = [UInt8](data)
-        
-        // Check minimum packet size (header + at least one sample)
+        let params = ppgParams
         let headerSize = 4
-        guard bytes.count >= headerSize + configuration.ppgSampleSize else {
-            throw BluetoothKitError.dataParsingFailed("PPG packet too short: \(bytes.count) bytes (minimum: \(headerSize + configuration.ppgSampleSize))")
-        }
         
-        // Calculate actual number of samples available
-        let dataWithoutHeader = bytes.count - headerSize
-        let actualSampleCount = dataWithoutHeader / configuration.ppgSampleSize
-        let expectedSampleCount = (configuration.ppgPacketSize - headerSize) / configuration.ppgSampleSize
-        
-        // Log if packet size differs from expected
-        if bytes.count != configuration.ppgPacketSize {
-            print("⚠️ PPG packet size: \(bytes.count) bytes (expected: \(configuration.ppgPacketSize)), processing \(actualSampleCount) samples (expected: \(expectedSampleCount))")
-        }
-
-        // Extract timestamp from packet header
-        let timeRaw = UInt32(bytes[3]) << 24 | UInt32(bytes[2]) << 16 | UInt32(bytes[1]) << 8 | UInt32(bytes[0])
-        var timestamp = Double(timeRaw) / configuration.timestampDivisor / configuration.millisecondsToSeconds
-
+        let header = try parsePacketHeader(from: bytes, params: params, headerSize: headerSize)
+        var timestamp = header.timestamp
         var readings: [PPGReading] = []
-
-        // Parse only the available samples
-        for sampleIndex in 0..<actualSampleCount {
-            let i = headerSize + (sampleIndex * configuration.ppgSampleSize)
+        
+        for sampleIndex in 0..<header.actualSampleCount {
+            guard validateSampleBounds(
+                sampleIndex: sampleIndex,
+                sampleSize: params.sampleSize,
+                headerSize: headerSize,
+                bytesCount: bytes.count,
+                sensorName: params.sensorName
+            ) else { break }
             
-            // Ensure we don't exceed array bounds
-            guard i + configuration.ppgSampleSize <= bytes.count else {
-                print("⚠️ PPG sample \(sampleIndex + 1) incomplete, skipping remaining samples")
-                break
-            }
+            let i = headerSize + (sampleIndex * params.sampleSize)
             
+            // Parse PPG data (24-bit values, Big Endian)
             let red = Int(bytes[i]) << 16 | Int(bytes[i+1]) << 8 | Int(bytes[i+2])
-            let ir  = Int(bytes[i+3]) << 16 | Int(bytes[i+4]) << 8 | Int(bytes[i+5])
+            let ir = Int(bytes[i+3]) << 16 | Int(bytes[i+4]) << 8 | Int(bytes[i+5])
             
             let reading = PPGReading(
                 red: red,
@@ -149,9 +204,7 @@ internal class SensorDataParser: @unchecked Sendable {
             )
             
             readings.append(reading)
-            
-            // Increment timestamp for next sample
-            timestamp += 1.0 / configuration.ppgSampleRate
+            timestamp += 1.0 / params.sampleRate
         }
         
         return readings
@@ -166,32 +219,28 @@ internal class SensorDataParser: @unchecked Sendable {
     /// - Throws: `BluetoothKitError.dataParsingFailed` if packet format is invalid
     internal func parseAccelerometerData(_ data: Data) throws -> [AccelerometerReading] {
         let bytes = [UInt8](data)
-        
+        let params = accelParams
         let headerSize = 4
-        let sampleSize = 6
         
-        guard bytes.count >= headerSize + sampleSize else {
+        guard bytes.count >= headerSize + params.sampleSize else {
             throw BluetoothKitError.dataParsingFailed("ACCEL packet too short: \(bytes.count) bytes")
         }
         
-        // Extract timestamp from packet header
-        let timeRaw = UInt32(bytes[3]) << 24 | UInt32(bytes[2]) << 16 | UInt32(bytes[1]) << 8 | UInt32(bytes[0])
+        // Extract timestamp and calculate sample count
+        let timeRaw = UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24
         var timestamp = Double(timeRaw) / configuration.timestampDivisor / configuration.millisecondsToSeconds
-
-        let dataWithoutHeaderCount = bytes.count - headerSize
-        guard dataWithoutHeaderCount >= sampleSize else {
-            throw BluetoothKitError.dataParsingFailed("ACCEL packet has header but not enough data for one sample")
-        }
         
-        let sampleCount = dataWithoutHeaderCount / sampleSize
+        let dataWithoutHeaderCount = bytes.count - headerSize
+        let sampleCount = dataWithoutHeaderCount / params.sampleSize
         var readings: [AccelerometerReading] = []
-
+        
         for i in 0..<sampleCount {
-            let baseInFullPacket = headerSize + (i * sampleSize)
+            let baseIndex = headerSize + (i * params.sampleSize)
+            
             // Use odd-numbered bytes as per hardware specification
-            let x = Int16(bytes[baseInFullPacket + 1])  // data[i+1]
-            let y = Int16(bytes[baseInFullPacket + 3])  // data[i+3] 
-            let z = Int16(bytes[baseInFullPacket + 5])  // data[i+5]
+            let x = Int16(bytes[baseIndex + 1])
+            let y = Int16(bytes[baseIndex + 3])
+            let z = Int16(bytes[baseIndex + 5])
             
             let reading = AccelerometerReading(
                 x: x,
@@ -201,9 +250,7 @@ internal class SensorDataParser: @unchecked Sendable {
             )
             
             readings.append(reading)
-            
-            // Increment timestamp for next sample
-            timestamp += 1.0 / configuration.accelerometerSampleRate
+            timestamp += 1.0 / params.sampleRate
         }
         
         return readings
