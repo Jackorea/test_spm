@@ -265,7 +265,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 return
             }
             let readings = try dataParser.parseEEGData(data)
-            log("EEG 데이터 수신: \(readings.count)개 샘플")
             readings.forEach { reading in
                 notifySensorData(reading) { [weak self] in
                     self?.sensorDataDelegate?.didReceiveEEGData($0)
@@ -282,7 +281,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 return
             }
             let readings = try dataParser.parsePPGData(data)
-            log("PPG 데이터 수신: \(readings.count)개 샘플")
             readings.forEach { reading in
                 notifySensorData(reading) { [weak self] in
                     self?.sensorDataDelegate?.didReceivePPGData($0)
@@ -299,7 +297,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
                 return
             }
             let readings = try dataParser.parseAccelerometerData(data)
-            log("가속도계 데이터 수신: \(readings.count)개 샘플")
             readings.forEach { reading in
                 notifySensorData(reading) { [weak self] in
                     self?.sensorDataDelegate?.didReceiveAccelerometerData($0)
@@ -308,7 +305,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             
         case SensorUUID.batteryChar:
             let reading = try dataParser.parseBatteryData(data)
-            log("배터리 데이터 수신: \(reading.level)%")
             notifySensorData(reading) { [weak self] in
                 self?.sensorDataDelegate?.didReceiveBatteryData($0)
             }
