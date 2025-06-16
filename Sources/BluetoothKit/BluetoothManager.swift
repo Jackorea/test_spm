@@ -245,7 +245,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         }
         
         do {
-            processSensorData(for: characteristic.uuid, data: data)
+            try processSensorData(for: characteristic.uuid, data: data)
         } catch {
             log("Data parsing error: \(error)")
         }
