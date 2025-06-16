@@ -87,13 +87,6 @@ internal class DataRecorder: @unchecked Sendable {
         
         // 선택된 센서 타입들 저장
         selectedSensorTypes = selectedSensors
-        print("🎯 DataRecorder: 기록 시작 - 선택된 센서: \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
-        
-        // 이전 writer들을 명시적으로 정리
-        eegCsvWriter = nil
-        ppgCsvWriter = nil
-        accelCsvWriter = nil
-        rawDataWriter = nil
         
         do {
             try setupRecordingFiles()
@@ -136,7 +129,6 @@ internal class DataRecorder: @unchecked Sendable {
     /// - Parameter selectedSensors: 기록할 센서 타입들의 집합
     public func updateSelectedSensors(_ selectedSensors: Set<SensorType>) {
         selectedSensorTypes = selectedSensors
-        print("📂 DataRecorder: 선택된 센서 업데이트 - \(selectedSensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
     }
     
     /// 센서 타입을 문자열로 변환하는 헬퍼 메서드
@@ -257,7 +249,6 @@ internal class DataRecorder: @unchecked Sendable {
         // Setup JSON file
         let rawDataURL = recordingsDirectory.appendingPathComponent("raw_data_\(timestampString).json")
         try setupJSONFile(at: rawDataURL)
-        print("📁 DataRecorder: JSON 파일 생성 - \(rawDataURL.lastPathComponent)")
         
         // Setup CSV files - 선택된 센서만 생성
         let csvTimestampString = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
@@ -268,25 +259,16 @@ internal class DataRecorder: @unchecked Sendable {
         // EEG가 선택된 경우에만 EEG CSV 파일 생성
         if selectedSensorTypes.contains(.eeg) {
             try setupEEGCSVFile(timestamp: csvTimestampString)
-            print("📁 DataRecorder: EEG CSV 파일 생성 - eeg_data_\(csvTimestampString).csv")
-        } else {
-            print("⚪ DataRecorder: EEG 미선택 - CSV 파일 생성 안함")
         }
         
         // PPG가 선택된 경우에만 PPG CSV 파일 생성
         if selectedSensorTypes.contains(.ppg) {
             try setupPPGCSVFile(timestamp: csvTimestampString)
-            print("📁 DataRecorder: PPG CSV 파일 생성 - ppg_data_\(csvTimestampString).csv")
-        } else {
-            print("⚪ DataRecorder: PPG 미선택 - CSV 파일 생성 안함")
         }
         
         // 가속도계가 선택된 경우에만 가속도계 CSV 파일 생성
         if selectedSensorTypes.contains(.accelerometer) {
             try setupAccelCSVFile(timestamp: csvTimestampString)
-            print("📁 DataRecorder: ACC CSV 파일 생성 - accel_data_\(csvTimestampString).csv")
-        } else {
-            print("⚪ DataRecorder: ACC 미선택 - CSV 파일 생성 안함")
         }
         
         initializeRawDataDict()

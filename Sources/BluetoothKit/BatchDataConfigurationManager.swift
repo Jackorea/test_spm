@@ -105,7 +105,6 @@ public class BatchDataConfigurationManager {
         self.configureAllSensors()
         self.bluetoothKit.enableMonitoring()  // 모니터링 활성화
         self.isMonitoringActive = true
-        print("✅ 센서 모니터링 시작 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     public func stopMonitoring() {
@@ -115,7 +114,6 @@ public class BatchDataConfigurationManager {
         self.bluetoothKit.batchDataDelegate = nil
         self.batchDelegate = nil
         self.isMonitoringActive = false
-        print("❌ 센서 모니터링 중지")
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
@@ -356,7 +354,6 @@ public class BatchDataConfigurationManager {
         }
         
         self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
-        print("🔧 BatchDataConsoleLogger 설정 완료 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
     /// 모든 센서 설정 적용
@@ -366,14 +363,12 @@ public class BatchDataConfigurationManager {
                 self.configureSensor(sensorType, isInitial: true)
             } else {
                 self.bluetoothKit.disableDataCollection(for: sensorType)
-                print("🚫 초기 비활성화: \(sensorType.displayName) - 데이터 수집 제외")
             }
         }
     }
     
     /// 변경사항 적용
     private func applyChanges() {
-        print("🔄 센서 선택 변경 감지 - 설정 업데이트 중...")
         self.setupBatchDelegate()
         
         if self.bluetoothKit.isRecording {
@@ -381,37 +376,22 @@ public class BatchDataConfigurationManager {
         }
         
         self.configureAllSensors()
-        print("✅ 센서 설정 업데이트 완료")
     }
     
     /// 특정 센서 설정
     private func configureSensor(_ sensor: SensorType, isInitial: Bool = false) {
-        let prefix = isInitial ? "🔧 초기 설정" : "🔄 자동 변경"
-        
         switch self.selectedCollectionMode {
         case .sampleCount:
             let sampleCount = self.getSampleCount(for: sensor)
             self.bluetoothKit.setDataCollection(sampleCount: sampleCount, for: sensor)
             
-            let expectedTime = self.getExpectedTime(for: sensor, sampleCount: sampleCount)
-            print("\(prefix): \(sensor.displayName) - \(sampleCount)개 샘플마다 배치 수신")
-            print("   → \(sensor.displayName): \(sampleCount)개 샘플 = 약 \(String(format: "%.1f", expectedTime))초")
-            
         case .duration:
             let duration = self.getDuration(for: sensor)
             self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration), for: sensor)
             
-            let expectedSamples = self.getExpectedSamples(for: sensor, duration: duration)
-            print("\(prefix): \(sensor.displayName) - \(duration)초마다 배치 수신")
-            print("   → \(sensor.displayName): \(duration)초마다 약 \(expectedSamples)개 샘플 예상")
-            
         case .minuteDuration:
             let duration = self.getDuration(for: sensor)
             self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration * 60), for: sensor)
-            
-            let expectedSamples = self.getExpectedSamples(for: sensor, duration: duration * 60)
-            print("\(prefix): \(sensor.displayName) - \(duration)분마다 배치 수신")
-            print("   → \(sensor.displayName): \(duration)분마다 약 \(expectedSamples)개 샘플 예상")
         }
     }
     
@@ -439,11 +419,9 @@ public class BatchDataConfigurationManager {
             if self.selectedSensors.contains(sensorType) {
                 // 선택된 센서: 데이터 수집 재활성화
                 self.configureSensor(sensorType, isInitial: false)
-                print("✅ 재활성화: \(sensorType.displayName) - 데이터 수집 재개")
             } else {
                 // 선택 해제된 센서: 데이터 수집 비활성화
                 self.bluetoothKit.disableDataCollection(for: sensorType)
-                print("🚫 비활성화: \(sensorType.displayName) - 데이터 수집 중지")
             }
         }
     }

@@ -910,16 +910,6 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
     /// - Parameter sensors: 콘솔에 출력할 센서 타입들의 집합
     public func updateSelectedSensors(_ sensors: Set<SensorType>) {
         selectedSensors = sensors
-        print("📝 콘솔 출력 설정 업데이트: \(sensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
-    }
-    
-    private func sensorTypeToString(_ sensorType: SensorType) -> String {
-        switch sensorType {
-        case .eeg: return "EEG"
-        case .ppg: return "PPG"
-        case .accelerometer: return "ACC"
-        case .battery: return "배터리"
-        }
     }
     
     public func didReceiveEEGBatch(_ readings: [EEGReading]) {
