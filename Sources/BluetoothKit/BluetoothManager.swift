@@ -214,8 +214,11 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         }
         
         // 새로 선택된 센서의 notify 활성화
-        for sensorType in newlySelectedSensors {
-            setNotifyValue(true, for: sensorType)
+        // 모니터링이 활성화된 상태에서만 notify를 활성화
+        if isMonitoringActive {
+            for sensorType in newlySelectedSensors {
+                setNotifyValue(true, for: sensorType)
+            }
         }
         
         selectedSensorTypes = sensors
