@@ -35,12 +35,10 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     // Auto-reconnection 관리
     private var lastConnectedPeripheralIdentifier: UUID?
     private var isAutoReconnectEnabled: Bool = true
-    private var isManualDisconnection: Bool = false  // 수동 연결해제 플래그 추가
+    private var isManualDisconnection: Bool = false
     
     // 센서 모니터링 상태
     private var isMonitoringActive: Bool = false
-    
-    // 선택된 센서 타입들
     private var selectedSensorTypes: Set<SensorType> = []
     
     // MARK: - Initialization
@@ -126,7 +124,7 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     public func disconnect() {
         guard let peripheral = connectedPeripheral else { return }
         
-        isManualDisconnection = true  // 수동 연결해제 플래그 설정
+        isManualDisconnection = true
         centralManager.cancelPeripheralConnection(peripheral)
     }
     
@@ -136,55 +134,17 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     public func enableAutoReconnect(_ enabled: Bool) {
         isAutoReconnectEnabled = enabled
         
-        if enabled {
-            // auto-reconnect가 활성화되고 마지막 연결된 디바이스가 있으며,
-            // 현재 연결이 끊어진 상태라면, 재연결을 시도합니다
-            if let lastPeripheralId = lastConnectedPeripheralIdentifier,
-               !isConnected,
-               centralManager.state == .poweredOn {
-                
-                // 검색된 디바이스에서 peripheral을 찾거나 검색을 시도합니다
-                if let peripheral = discoveredDevices.first(where: { $0.peripheral.identifier == lastPeripheralId })?.peripheral {
-                    connectionState = .reconnecting(peripheral.name ?? "Unknown Device")
-                    centralManager.connect(peripheral, options: nil)
-                } else {
-                    // peripheral이 검색된 디바이스에 없다면, 검색을 시도합니다
-                    let peripherals = centralManager.retrievePeripherals(withIdentifiers: [lastPeripheralId])
-                    if let peripheral = peripherals.first {
-                        connectionState = .reconnecting(peripheral.name ?? "Unknown Device")
-                        centralManager.connect(peripheral, options: nil)
-                    }
-                }
-            }
-        } else {
-            // auto-reconnect가 비활성화되면, 진행 중인 재연결 시도를 취소합니다
-            if case .reconnecting(_) = connectionState {
-                // 재연결을 시도 중인 peripheral을 찾아서 연결을 취소합니다
-                if let lastPeripheralId = lastConnectedPeripheralIdentifier {
-                    let peripherals = centralManager.retrievePeripherals(withIdentifiers: [lastPeripheralId])
-                    if let peripheral = peripherals.first {
-                        centralManager.cancelPeripheralConnection(peripheral)
-                    }
-                }
-                connectionState = .disconnected
-            }
-            log("Auto-reconnect disabled - all automatic reconnection attempts will be blocked")
+        if enabled && !isConnected && centralManager.state == .poweredOn {
+            attemptAutoReconnection()
+        } else if !enabled {
+            cancelAutoReconnection()
         }
     }
     
     /// 센서 모니터링을 활성화합니다.
     public func enableMonitoring() {
-        guard let peripheral = connectedPeripheral else { return }
         isMonitoringActive = true
-        
-        // 배터리 센서는 항상 활성화
-        setNotifyValue(true, for: .battery)
-        
-        // 선택된 센서만 활성화
-        for sensorType in selectedSensorTypes {
-            setNotifyValue(true, for: sensorType)
-        }
-        
+        configureSensorNotifications()
         log("모니터링 활성화됨 (선택된 센서만)")
     }
     
@@ -202,20 +162,8 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     /// 선택된 센서 타입을 설정합니다.
     public func setSelectedSensors(_ sensors: Set<SensorType>) {
-        guard let peripheral = connectedPeripheral else { return }
-        
-        // 모든 센서의 notify 상태를 업데이트
-        for sensorType in SensorType.allCases {
-            if sensorType == .battery {
-                // 배터리는 항상 활성화
-                setNotifyValue(true, for: sensorType)
-            } else {
-                // 다른 센서들은 선택 여부에 따라 활성화/비활성화
-                setNotifyValue(sensors.contains(sensorType), for: sensorType)
-            }
-        }
-        
         selectedSensorTypes = sensors
+        configureSensorNotifications()
         log("센서 선택 업데이트됨: \(sensors.map { $0.rawValue }.joined(separator: ", "))")
     }
     
@@ -225,18 +173,15 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         let name = peripheral.name ?? ""
         guard name.hasPrefix(configuration.deviceNamePrefix) else { return }
         
-        // 디바이스가 이미 존재하는지 확인합니다
         if !discoveredDevices.contains(where: { $0.peripheral.identifier == peripheral.identifier }) {
             let device = BluetoothDevice(peripheral: peripheral, name: name)
             discoveredDevices.append(device)
-            
             notifyDeviceDiscovered(device)
         }
     }
     
     private func handleConnectionSuccess(_ peripheral: CBPeripheral) {
-        // 이 연결이 허용되는지 확인합니다
-        // auto-reconnect가 비활성화되어 있고 사용자가 시작한 연결이 아니라면, 취소합니다
+        // Auto-reconnect 상태 확인
         if case .reconnecting = connectionState, !isAutoReconnectEnabled {
             centralManager.cancelPeripheralConnection(peripheral)
             connectionState = .disconnected
@@ -249,15 +194,13 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         let deviceName = peripheral.name ?? "Unknown Device"
         connectionState = .connected(deviceName)
         
-        // 서비스 검색을 시작합니다
         peripheral.delegate = self
         peripheral.discoverServices(nil)
         
-        // 이전에 모니터링이 활성화되어 있었다면 다시 시작
+        // 모니터링 재설정
         if isMonitoringActive {
-            enableMonitoring()
+            configureSensorNotifications()
         } else {
-            // 모니터링이 비활성화된 상태라도 배터리 센서는 활성화
             setNotifyValue(true, for: .battery)
         }
         
@@ -269,7 +212,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
     private func handleConnectionFailure(_ peripheral: CBPeripheral, error: Error?) {
         let errorMessage = error?.localizedDescription ?? "Unknown error"
         connectionState = .failed(BluetoothKitError.connectionFailed(errorMessage))
-        
         log("Connection failed: \(errorMessage)")
     }
     
@@ -280,23 +222,14 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             connectedPeripheral = nil
         }
         
-        // 연결 해제 시 모니터링 상태는 유지 (isMonitoringActive 값 유지)
-        
-        // 수동 연결해제인지 확인
+        // 연결 해제 처리 로직 단순화
         if isManualDisconnection {
-            // 수동 연결해제의 경우 자동 재연결하지 않음
-            isManualDisconnection = false  // 플래그 리셋
+            isManualDisconnection = false
             connectionState = .disconnected
-        } else if !isAutoReconnectEnabled {
-            // 자동 재연결이 비활성화된 경우
-            connectionState = .disconnected
-        } else if let lastPeripheralId = lastConnectedPeripheralIdentifier,
-                  lastPeripheralId == peripheral.identifier {
-            // 마지막으로 연결된 디바이스와 동일한 경우에만 재연결 시도
+        } else if isAutoReconnectEnabled && lastConnectedPeripheralIdentifier == peripheral.identifier {
             connectionState = .reconnecting(deviceName)
             centralManager.connect(peripheral, options: nil)
         } else {
-            // 마지막으로 연결된 디바이스가 아닌 경우 연결 해제
             connectionState = .disconnected
         }
         
@@ -312,134 +245,172 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         }
         
         do {
-            switch characteristic.uuid {
-            case SensorUUID.eegNotifyChar:
-                guard isMonitoringActive && selectedSensorTypes.contains(.eeg) else { return }
-                let readings = try dataParser.parseEEGData(data)
-                for reading in readings {
-                    notifySensorData(reading) { [weak self] data in
-                        self?.sensorDataDelegate?.didReceiveEEGData(data)
-                    }
-                }
-                
-            case SensorUUID.ppgChar:
-                guard isMonitoringActive && selectedSensorTypes.contains(.ppg) else { return }
-                let readings = try dataParser.parsePPGData(data)
-                for reading in readings {
-                    notifySensorData(reading) { [weak self] data in
-                        self?.sensorDataDelegate?.didReceivePPGData(data)
-                    }
-                }
-                
-            case SensorUUID.accelChar:
-                guard isMonitoringActive && selectedSensorTypes.contains(.accelerometer) else { return }
-                let readings = try dataParser.parseAccelerometerData(data)
-                for reading in readings {
-                    notifySensorData(reading) { [weak self] data in
-                        self?.sensorDataDelegate?.didReceiveAccelerometerData(data)
-                    }
-                }
-                
-            case SensorUUID.batteryChar:
-                // 배터리 데이터는 모니터링 상태와 관계없이 항상 처리
-                let reading = try dataParser.parseBatteryData(data)
-                notifySensorData(reading) { [weak self] data in
-                    self?.sensorDataDelegate?.didReceiveBatteryData(data)
-                }
-                
-            default:
-                log("Received data from unknown characteristic: \(characteristic.uuid)")
-            }
+            processSensorData(for: characteristic.uuid, data: data)
         } catch {
             log("Data parsing error: \(error)")
+        }
+    }
+    
+    // MARK: - Unified Sensor Data Processing
+    
+    private func processSensorData(for uuid: CBUUID, data: Data) throws {
+        switch uuid {
+        case SensorUUID.eegNotifyChar:
+            guard isMonitoringActive && selectedSensorTypes.contains(.eeg) else { return }
+            let readings = try dataParser.parseEEGData(data)
+            readings.forEach { reading in
+                notifySensorData(reading) { [weak self] in
+                    self?.sensorDataDelegate?.didReceiveEEGData($0)
+                }
+            }
+            
+        case SensorUUID.ppgChar:
+            guard isMonitoringActive && selectedSensorTypes.contains(.ppg) else { return }
+            let readings = try dataParser.parsePPGData(data)
+            readings.forEach { reading in
+                notifySensorData(reading) { [weak self] in
+                    self?.sensorDataDelegate?.didReceivePPGData($0)
+                }
+            }
+            
+        case SensorUUID.accelChar:
+            guard isMonitoringActive && selectedSensorTypes.contains(.accelerometer) else { return }
+            let readings = try dataParser.parseAccelerometerData(data)
+            readings.forEach { reading in
+                notifySensorData(reading) { [weak self] in
+                    self?.sensorDataDelegate?.didReceiveAccelerometerData($0)
+                }
+            }
+            
+        case SensorUUID.batteryChar:
+            let reading = try dataParser.parseBatteryData(data)
+            notifySensorData(reading) { [weak self] in
+                self?.sensorDataDelegate?.didReceiveBatteryData($0)
+            }
+            
+        default:
+            log("Received data from unknown characteristic: \(uuid)")
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func attemptAutoReconnection() {
+        guard let lastPeripheralId = lastConnectedPeripheralIdentifier else { return }
+        
+        if let peripheral = discoveredDevices.first(where: { $0.peripheral.identifier == lastPeripheralId })?.peripheral {
+            connectionState = .reconnecting(peripheral.name ?? "Unknown Device")
+            centralManager.connect(peripheral, options: nil)
+        } else {
+            let peripherals = centralManager.retrievePeripherals(withIdentifiers: [lastPeripheralId])
+            if let peripheral = peripherals.first {
+                connectionState = .reconnecting(peripheral.name ?? "Unknown Device")
+                centralManager.connect(peripheral, options: nil)
+            }
+        }
+    }
+    
+    private func cancelAutoReconnection() {
+        if case .reconnecting(_) = connectionState,
+           let lastPeripheralId = lastConnectedPeripheralIdentifier {
+            let peripherals = centralManager.retrievePeripherals(withIdentifiers: [lastPeripheralId])
+            if let peripheral = peripherals.first {
+                centralManager.cancelPeripheralConnection(peripheral)
+            }
+            connectionState = .disconnected
+        }
+        log("Auto-reconnect disabled")
+    }
+    
+    private func configureSensorNotifications() {
+        guard connectedPeripheral != nil else { return }
+        
+        // 배터리 센서는 항상 활성화
+        setNotifyValue(true, for: .battery)
+        
+        // 선택된 센서만 활성화
+        for sensorType in SensorType.allCases where sensorType != .battery {
+            setNotifyValue(selectedSensorTypes.contains(sensorType), for: sensorType)
+        }
+    }
+    
+    // MARK: - Unified Notification Methods
+    
+    private func notifyOnMainThread<T>(_ action: @escaping () -> T) {
+        if Thread.isMainThread {
+            _ = action()
+        } else {
+            DispatchQueue.main.async {
+                _ = action()
+            }
+        }
+    }
+    
+    private func notifyStateChange(_ state: ConnectionState) {
+        notifyOnMainThread { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.bluetoothManager(self, didUpdateState: state)
+        }
+    }
+    
+    private func notifyDeviceDiscovered(_ device: BluetoothDevice) {
+        notifyOnMainThread { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.bluetoothManager(self, didDiscoverDevice: device)
+        }
+    }
+    
+    private func notifyDeviceConnected(_ device: BluetoothDevice) {
+        notifyOnMainThread { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.bluetoothManager(self, didConnectToDevice: device)
+        }
+    }
+    
+    private func notifyDeviceDisconnected(_ device: BluetoothDevice, error: Error?) {
+        notifyOnMainThread { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.bluetoothManager(self, didDisconnectFromDevice: device, error: error)
+        }
+    }
+    
+    private func notifySensorData<T: Sendable>(_ data: T, callback: @escaping @Sendable (T) -> Void) {
+        notifyOnMainThread {
+            callback(data)
+        }
+    }
+    
+    // MARK: - Sensor Notification Management
+    
+    private func setNotifyValue(_ enabled: Bool, for sensorType: SensorType) {
+        guard let peripheral = connectedPeripheral else { return }
+        
+        let targetUUID = sensorType.characteristicUUID
+        
+        for service in peripheral.services ?? [] {
+            for characteristic in service.characteristics ?? [] {
+                if characteristic.uuid == targetUUID {
+                    peripheral.setNotifyValue(enabled, for: characteristic)
+                    return
+                }
+            }
         }
     }
     
     private func log(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
         logger.log(message, file: file, function: function, line: line)
     }
-    
-    // MARK: - Private Helper Methods
-    
-    private func notifyStateChange(_ state: ConnectionState) {
-        if Thread.isMainThread {
-            delegate?.bluetoothManager(self, didUpdateState: state)
-        } else {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.delegate?.bluetoothManager(self, didUpdateState: state)
-            }
-        }
-    }
-    
-    private func notifyDeviceDiscovered(_ device: BluetoothDevice) {
-        if Thread.isMainThread {
-            delegate?.bluetoothManager(self, didDiscoverDevice: device)
-        } else {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.delegate?.bluetoothManager(self, didDiscoverDevice: device)
-            }
-        }
-    }
-    
-    private func notifyDeviceConnected(_ device: BluetoothDevice) {
-        if Thread.isMainThread {
-            delegate?.bluetoothManager(self, didConnectToDevice: device)
-        } else {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.delegate?.bluetoothManager(self, didConnectToDevice: device)
-            }
-        }
-    }
-    
-    private func notifyDeviceDisconnected(_ device: BluetoothDevice, error: Error?) {
-        if Thread.isMainThread {
-            delegate?.bluetoothManager(self, didDisconnectFromDevice: device, error: error)
-        } else {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.delegate?.bluetoothManager(self, didDisconnectFromDevice: device, error: error)
-            }
-        }
-    }
-    
-    private func notifySensorData<T: Sendable>(_ data: T, callback: @escaping @Sendable (T) -> Void) {
-        if Thread.isMainThread {
-            callback(data)
-        } else {
-            DispatchQueue.main.async {
-                callback(data)
-            }
-        }
-    }
-    
-    /// 센서 특성의 notify 상태를 설정합니다.
-    private func setNotifyValue(_ enabled: Bool, for sensorType: SensorType) {
-        guard let peripheral = connectedPeripheral else { return }
-        
-        for service in peripheral.services ?? [] {
-            for characteristic in service.characteristics ?? [] {
-                switch sensorType {
-                case .eeg:
-                    if characteristic.uuid == SensorUUID.eegNotifyChar {
-                        peripheral.setNotifyValue(enabled, for: characteristic)
-                    }
-                case .ppg:
-                    if characteristic.uuid == SensorUUID.ppgChar {
-                        peripheral.setNotifyValue(enabled, for: characteristic)
-                    }
-                case .accelerometer:
-                    if characteristic.uuid == SensorUUID.accelChar {
-                        peripheral.setNotifyValue(enabled, for: characteristic)
-                    }
-                case .battery:
-                    if characteristic.uuid == SensorUUID.batteryChar {
-                        peripheral.setNotifyValue(enabled, for: characteristic)
-                    }
-                }
-            }
+}
+
+// MARK: - SensorType Extension
+
+private extension SensorType {
+    var characteristicUUID: CBUUID {
+        switch self {
+        case .eeg: return SensorUUID.eegNotifyChar
+        case .ppg: return SensorUUID.ppgChar
+        case .accelerometer: return SensorUUID.accelChar
+        case .battery: return SensorUUID.batteryChar
         }
     }
 }
@@ -462,13 +433,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
                 connectionState = .disconnected
             }
             
-        case .poweredOff:
-            connectionState = .failed(BluetoothKitError.bluetoothUnavailable)
-            
-        case .unauthorized:
-            connectionState = .failed(BluetoothKitError.bluetoothUnavailable)
-            
-        case .unsupported:
+        case .poweredOff, .unauthorized, .unsupported:
             connectionState = .failed(BluetoothKitError.bluetoothUnavailable)
             
         default:
@@ -565,14 +530,12 @@ extension BluetoothManager: CBPeripheralDelegate {
     internal func peripheral(_ peripheral: CBPeripheral,
                           didDiscoverCharacteristicsFor service: CBService,
                           error: Error?) {
-        guard let characteristics = service.characteristics else { return }
+        guard service.characteristics != nil else { return }
         
         // 배터리 센서는 항상 활성화하고 바로 읽기
-        for characteristic in characteristics {
-            if characteristic.uuid == SensorUUID.batteryChar {
-                peripheral.setNotifyValue(true, for: characteristic)
-                peripheral.readValue(for: characteristic)  // 배터리 값 즉시 읽기
-            }
+        setNotifyValue(true, for: .battery)
+        if let batteryChar = service.characteristics?.first(where: { $0.uuid == SensorUUID.batteryChar }) {
+            peripheral.readValue(for: batteryChar)
         }
         
         // 선택된 센서만 활성화
