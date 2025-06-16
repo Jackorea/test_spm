@@ -536,13 +536,22 @@ extension BluetoothManager: CBPeripheralDelegate {
         guard let characteristics = service.characteristics else { return }
         
         for characteristic in characteristics {
-            if SensorUUID.allSensorCharacteristics.contains(characteristic.uuid) {
+            // 배터리 센서는 항상 활성화
+            if characteristic.uuid == SensorUUID.batteryChar {
                 peripheral.setNotifyValue(true, for: characteristic)
-                
-                // 배터리 특성이 발견되면 바로 읽기
-                if characteristic.uuid == SensorUUID.batteryChar {
-                    peripheral.readValue(for: characteristic)
-                }
+                peripheral.readValue(for: characteristic)
+                continue
+            }
+            
+            // 선택된 센서만 활성화
+            if selectedSensorTypes.contains(.eeg) && characteristic.uuid == SensorUUID.eegNotifyChar {
+                peripheral.setNotifyValue(true, for: characteristic)
+            }
+            if selectedSensorTypes.contains(.ppg) && characteristic.uuid == SensorUUID.ppgChar {
+                peripheral.setNotifyValue(true, for: characteristic)
+            }
+            if selectedSensorTypes.contains(.accelerometer) && characteristic.uuid == SensorUUID.accelChar {
+                peripheral.setNotifyValue(true, for: characteristic)
             }
         }
     }
