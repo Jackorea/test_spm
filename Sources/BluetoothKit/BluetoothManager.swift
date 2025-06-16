@@ -243,6 +243,10 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
             return
         }
         
+        // 모든 상태 초기화
+        isMonitoringActive = false
+        selectedSensorTypes.removeAll()
+        
         connectedPeripheral = peripheral
         lastConnectedPeripheralIdentifier = peripheral.identifier
         
@@ -252,9 +256,6 @@ internal class BluetoothManager: NSObject, @unchecked Sendable {
         // 서비스 검색을 시작합니다
         peripheral.delegate = self
         peripheral.discoverServices(nil)
-        
-        // 연결 시 모니터링 상태를 항상 비활성화로 초기화
-        isMonitoringActive = false
         
         if let device = discoveredDevices.first(where: { $0.peripheral.identifier == peripheral.identifier }) {
             notifyDeviceConnected(device)
