@@ -1,6 +1,26 @@
 import Foundation
 import CoreBluetooth
 
+// MARK: - Accelerometer Mode
+
+/// 가속도계 데이터 표시 모드를 정의하는 열거형
+public enum AccelerometerMode: CaseIterable {
+    /// 원시 가속도 값 표시 (중력 포함)
+    case raw
+    /// 선형 가속도 값 표시 (중력 제거)
+    case motion
+    
+    /// 모드에 대한 사용자 친화적인 설명
+    public var description: String {
+        switch self {
+        case .raw:
+            return "중력을 포함한 원시 가속도 값"
+        case .motion:
+            return "중력을 제거한 움직임만 표시"
+        }
+    }
+}
+
 // MARK: - Device Models
 
 /// Bluetooth 디바이스를 나타내는 구조체입니다.
@@ -855,26 +875,6 @@ internal struct DataCollectionConfig {
     init(sensorType: SensorType, timeInterval: TimeInterval) {
         self.sensorType = sensorType
         self.mode = .timeInterval(max(0.001, timeInterval))  // 최소 1ms
-    }
-}
-
-// MARK: - Accelerometer Mode
-
-/// 가속도계 데이터 표시 모드를 나타내는 열거형입니다.
-public enum AccelerometerMode: CaseIterable, Sendable {
-    /// 원시 가속도계 값 (중력 포함)
-    case raw
-    /// 움직임 데이터 (중력 제거된 선형 가속도)
-    case motion
-    
-    /// 각 모드의 설명을 반환합니다.
-    public var description: String {
-        switch self {
-        case .raw:
-            return "원시값 (중력 포함)"
-        case .motion:
-            return "움직임 (중력 제거)"
-        }
     }
 }
 

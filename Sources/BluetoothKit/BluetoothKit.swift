@@ -26,6 +26,10 @@ public protocol BluetoothKitDelegate: AnyObject {
     func bluetoothKit(_ kit: BluetoothKit, didUpdateRecordedFiles files: [URL])
     /// Bluetooth 상태가 변경되었을 때 호출
     func bluetoothKit(_ kit: BluetoothKit, didUpdateBluetoothDisabled isDisabled: Bool)
+    /// 연결 상태가 변경되었을 때 호출
+    func bluetoothKit(_ kit: BluetoothKit, didUpdateConnectionState state: ConnectionState)
+    /// 가속도계 모드가 변경되었을 때 호출
+    func bluetoothKit(_ kit: BluetoothKit, didUpdateAccelerometerMode mode: AccelerometerMode)
 }
 
 // MARK: - BluetoothKit Main Interface
@@ -63,25 +67,8 @@ public class BluetoothKit: @unchecked Sendable {
     
     // MARK: - Delegate
     
-    /// BluetoothKit의 상태 변화를 알리는 델리게이트
-    public weak var delegate: BluetoothKitDelegate? {
-        didSet {
-            // 델리게이트 설정 시 현재 상태 동기화
-            if let delegate = delegate {
-                delegate.bluetoothKit(self, didUpdateDevices: discoveredDevices)
-                delegate.bluetoothKit(self, didUpdateConnectionStatus: connectionStatusDescription)
-                delegate.bluetoothKit(self, didUpdateScanningState: isScanning)
-                delegate.bluetoothKit(self, didUpdateRecordingState: isRecording)
-                delegate.bluetoothKit(self, didUpdateAutoReconnectState: isAutoReconnectEnabled)
-                delegate.bluetoothKit(self, didUpdateEEGReading: latestEEGReading)
-                delegate.bluetoothKit(self, didUpdatePPGReading: latestPPGReading)
-                delegate.bluetoothKit(self, didUpdateAccelerometerReading: latestAccelerometerReading)
-                delegate.bluetoothKit(self, didUpdateBatteryReading: latestBatteryReading)
-                delegate.bluetoothKit(self, didUpdateRecordedFiles: recordedFiles)
-                delegate.bluetoothKit(self, didUpdateBluetoothDisabled: isBluetoothDisabled)
-            }
-        }
-    }
+    /// BluetoothKit의 상태 변화를 받을 델리게이트
+    public weak var delegate: BluetoothKitDelegate?
     
     // MARK: - Public Properties
     
@@ -350,6 +337,20 @@ public class BluetoothKit: @unchecked Sendable {
         }
     }
     
+    /// 현재 연결 상태 (내부에서만 설정 가능)
+    private(set) public var connectionState: ConnectionState = .disconnected {
+        didSet {
+            delegate?.bluetoothKit(self, didUpdateConnectionState: connectionState)
+        }
+    }
+    
+    /// 가속도계 표시 모드
+    public var accelerometerMode: AccelerometerMode = .raw {
+        didSet {
+            delegate?.bluetoothKit(self, didUpdateAccelerometerMode: accelerometerMode)
+        }
+    }
+    
     // MARK: - Batch Data Collection
     
     /// 배치 단위로 센서 데이터를 수신하는 델리게이트.
@@ -372,11 +373,6 @@ public class BluetoothKit: @unchecked Sendable {
     public weak var batchDataDelegate: SensorBatchDataDelegate?
     
     // MARK: - Internal Properties
-    
-    /// 내부 연결 상태 (SDK 내부 사용만).
-    public var connectionState: ConnectionState = .disconnected
-    
-    // MARK: - Batch Data Collection (Internal)
     
     /// 각 센서별 데이터 수집 설정
     private var dataCollectionConfigs: [SensorType: DataCollectionConfig] = [:]
@@ -592,10 +588,7 @@ public class BluetoothKit: @unchecked Sendable {
     ///     .disabled(!bluetoothKit.isConnected)
     /// ```
     public var isConnected: Bool {
-        if case .connected = connectionState {
-            return true
-        }
-        return false
+        return bluetoothManager.isConnected
     }
     
     // MARK: - Batch Data Collection API
@@ -847,22 +840,9 @@ public class BluetoothKit: @unchecked Sendable {
         recordedFiles = dataRecorder.getRecordedFiles()
     }
     
-    // MARK: - Public Configuration Methods
-    
-    /// 자동 재연결 기능을 활성화/비활성화합니다.
-    ///
-    /// - Parameter enabled: 자동 재연결 활성화 여부
+    /// 자동 재연결 기능을 설정합니다.
     public func setAutoReconnect(enabled: Bool) {
         isAutoReconnectEnabled = enabled
-        bluetoothManager.enableAutoReconnect(enabled)
-        delegate?.bluetoothKit(self, didUpdateAutoReconnectState: enabled)
-    }
-    
-    /// 가속도계 모드를 설정합니다.
-    public var accelerometerMode: AccelerometerMode = .raw {
-        didSet {
-            // 가속도계 모드 변경 알림 (필요시 구현)
-        }
     }
 }
 
@@ -882,18 +862,12 @@ extension BluetoothKit: BluetoothManagerDelegate {
         } else {
             isBluetoothDisabled = false
         }
-        
-        // 델리게이트에 상태 변경 알림
-        delegate?.bluetoothKit(self, didUpdateConnectionStatus: connectionStatusDescription)
-        delegate?.bluetoothKit(self, didUpdateScanningState: isScanning)
-        delegate?.bluetoothKit(self, didUpdateBluetoothDisabled: isBluetoothDisabled)
     }
     
     internal func bluetoothManager(_ manager: AnyObject, didDiscoverDevice device: BluetoothDevice) {
         if !discoveredDevices.contains(where: { $0.peripheral.identifier == device.peripheral.identifier }) {
             discoveredDevices.append(device)
             delegate?.bluetoothKit(self, didDiscoverDevice: device)
-            delegate?.bluetoothKit(self, didUpdateDevices: discoveredDevices)
         }
     }
     
@@ -923,9 +897,6 @@ extension BluetoothKit: SensorDataDelegate {
         }
         
         addToEEGBuffer(reading)
-        
-        // 델리게이트에 EEG 데이터 업데이트 알림
-        delegate?.bluetoothKit(self, didUpdateEEGReading: reading)
     }
     
     internal func didReceivePPGData(_ reading: PPGReading) {
@@ -937,9 +908,6 @@ extension BluetoothKit: SensorDataDelegate {
         }
         
         addToPPGBuffer(reading)
-        
-        // 델리게이트에 PPG 데이터 업데이트 알림
-        delegate?.bluetoothKit(self, didUpdatePPGReading: reading)
     }
     
     internal func didReceiveAccelerometerData(_ reading: AccelerometerReading) {
@@ -951,9 +919,6 @@ extension BluetoothKit: SensorDataDelegate {
         }
         
         addToAccelerometerBuffer(reading)
-        
-        // 델리게이트에 가속도계 데이터 업데이트 알림
-        delegate?.bluetoothKit(self, didUpdateAccelerometerReading: reading)
     }
     
     internal func didReceiveBatteryData(_ reading: BatteryReading) {
@@ -961,11 +926,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배터리 데이터도 기록 (배치 수집 설정과 무관하게)
         if isRecording {
-            dataRecorder.recordBatteryData(reading)
+            dataRecorder.recordBatteryData([reading])
         }
-        
-        // 델리게이트에 배터리 데이터 업데이트 알림
-        delegate?.bluetoothKit(self, didUpdateBatteryReading: reading)
     }
 }
 
@@ -977,20 +939,12 @@ extension BluetoothKit: DataRecorderDelegate {
     internal func dataRecorder(_ recorder: AnyObject, didStartRecording at: Date) {
         isRecording = true
         log("Started recording at: \(at)")
-        
-        // 델리게이트에 기록 시작 알림
-        delegate?.bluetoothKit(self, didUpdateRecordingState: true)
     }
     
     internal func dataRecorder(_ recorder: AnyObject, didStopRecording at: Date, savedFiles: [URL]) {
         isRecording = false
-        recordedFiles = savedFiles
         updateRecordedFiles()
         log("Stopped recording at: \(at), saved \(savedFiles.count) files")
-        
-        // 델리게이트에 기록 중지 및 파일 업데이트 알림
-        delegate?.bluetoothKit(self, didUpdateRecordingState: false)
-        delegate?.bluetoothKit(self, didUpdateRecordedFiles: recordedFiles)
     }
     
     internal func dataRecorder(_ recorder: AnyObject, didFailWithError error: Error) {
