@@ -541,9 +541,9 @@ public class BluetoothKit: @unchecked Sendable {
     /// bluetoothKit.startRecording()
     /// ```
     public func startRecording() {
-        // 현재 설정된 센서 타입들만 기록하도록 전달
-        let selectedSensors = Set(dataCollectionConfigs.keys)
-        dataRecorder.startRecording(with: selectedSensors)
+        // 모든 센서 타입을 기본적으로 기록 (배치 설정과 무관하게)
+        let allSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
+        dataRecorder.startRecording(with: allSensors)
     }
     
     /// 센서 데이터 기록을 중지합니다.
@@ -778,8 +778,9 @@ public class BluetoothKit: @unchecked Sendable {
     /// bluetoothKit.updateRecordingSensors([.eeg])
     /// ```
     public func updateRecordingSensors() {
-        let selectedSensors = Set(dataCollectionConfigs.keys)
-        dataRecorder.updateSelectedSensors(selectedSensors)
+        // 모든 센서 타입을 기본적으로 기록 (배치 설정과 무관하게)
+        let allSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer]
+        dataRecorder.updateSelectedSensors(allSensors)
     }
     
     // MARK: - Private Setup
@@ -993,8 +994,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceiveEEGData(_ reading: EEGReading) {
         latestEEGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.eeg] != nil {
+        // 기록 중이면 항상 EEG 데이터 기록 (배치 설정과 무관하게)
+        if isRecording {
             dataRecorder.recordEEGData([reading])
         }
         
@@ -1004,8 +1005,8 @@ extension BluetoothKit: SensorDataDelegate {
     internal func didReceivePPGData(_ reading: PPGReading) {
         latestPPGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.ppg] != nil {
+        // 기록 중이면 항상 PPG 데이터 기록 (배치 설정과 무관하게)
+        if isRecording {
             dataRecorder.recordPPGData([reading])
         }
         
@@ -1019,12 +1020,12 @@ extension BluetoothKit: SensorDataDelegate {
         // 처리된 데이터를 최신 읽기값으로 저장
         latestAccelerometerReading = processedReading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
+        // 기록 중이면 항상 가속도계 데이터 기록 (배치 설정과 무관하게)
+        if isRecording {
             dataRecorder.recordAccelerometerData([processedReading])
         }
         
-        // 배치 처리에도 처리된 데이터 사용
+        // 배치 처리는 배치 설정이 있을 때만
         addToAccelerometerBuffer(processedReading)
     }
     
