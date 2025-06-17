@@ -924,6 +924,14 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
     private var batchCount: [String: Int] = [:]
     private let startTime = Date()
     private var _selectedSensors: Set<SensorType> = []
+    private var _accelerometerMode: AccelerometerMode = .raw
+    
+    // 중력 추정값 저장 (움직임 모드용)
+    private var gravityX: Double = 0
+    private var gravityY: Double = 0
+    private var gravityZ: Double = 0
+    private var isGravityInitialized = false
+    private let gravityFilterFactor: Double = 0.1
     
     // Thread-safe access to selectedSensors using concurrent queue
     private let sensorAccessQueue = DispatchQueue(label: "com.bluetoothkit.sensorsAccess", attributes: .concurrent)
@@ -941,6 +949,19 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         }
     }
     
+    private var accelerometerMode: AccelerometerMode {
+        get {
+            return sensorAccessQueue.sync {
+                return _accelerometerMode
+            }
+        }
+        set {
+            sensorAccessQueue.async(flags: .barrier) {
+                self._accelerometerMode = newValue
+            }
+        }
+    }
+    
     /// 새로운 BatchDataConsoleLogger 인스턴스를 생성합니다.
     public init() {}
     
@@ -953,6 +974,16 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
     public func updateSelectedSensors(_ sensors: Set<SensorType>) {
         selectedSensors = sensors
         print("📝 콘솔 출력 설정 업데이트: \(sensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
+    }
+    
+    /// 가속도계 모드를 업데이트하는 메서드
+    ///
+    /// 콘솔 출력에서 원시값 또는 움직임 모드로 표시할지 결정합니다.
+    ///
+    /// - Parameter mode: 가속도계 표시 모드
+    public func updateAccelerometerMode(_ mode: AccelerometerMode) {
+        accelerometerMode = mode
+        print("📝 가속도계 모드 업데이트: \(mode.description)")
     }
     
     private func sensorTypeToString(_ sensorType: SensorType) -> String {
@@ -1008,14 +1039,43 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
         batchCount["ACCEL"] = count
         let elapsed = Date().timeIntervalSince(startTime)
         
-        print("🏃 ACC 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
+        let modeText = accelerometerMode == .raw ? "원시값" : "움직임"
+        print("🏃 ACC 배치 #\(count) 수신 [\(modeText)] - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
         
-        // 모든 ACC 샘플 출력 (원본 타임스탬프만)
+        // 모든 ACC 샘플 출력
         for (index, reading) in readings.enumerated() {
             let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
-            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+            
+            if accelerometerMode == .raw {
+                // 원시값 모드: 원래대로 출력
+                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+            } else {
+                // 움직임 모드: 중력 제거된 선형 가속도 계산 및 출력
+                updateGravityEstimate(reading)
+                let linearX = Int16(Double(reading.x) - gravityX)
+                let linearY = Int16(Double(reading.y) - gravityY)
+                let linearZ = Int16(Double(reading.z) - gravityZ)
+                
+                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), RAW_X=\(reading.x), RAW_Y=\(reading.y), RAW_Z=\(reading.z), LINEAR_X=\(linearX), LINEAR_Y=\(linearY), LINEAR_Z=\(linearZ)")
+            }
         }
         print("") // 배치 간 구분을 위한 빈 줄
+    }
+    
+    /// 중력 성분을 추정하고 업데이트하는 함수 (움직임 모드용)
+    private func updateGravityEstimate(_ reading: AccelerometerReading) {
+        if !isGravityInitialized {
+            // 첫 번째 읽기: 초기값으로 설정
+            gravityX = Double(reading.x)
+            gravityY = Double(reading.y)
+            gravityZ = Double(reading.z)
+            isGravityInitialized = true
+        } else {
+            // 저역 통과 필터를 사용한 중력 추정
+            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
+            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
+            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
+        }
     }
     
     public func didReceiveBatteryUpdate(_ reading: BatteryReading) {

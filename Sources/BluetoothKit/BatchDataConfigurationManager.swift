@@ -386,6 +386,8 @@ public class BatchDataConfigurationManager {
         }
         
         self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
+        // 현재 가속도계 모드도 함께 전달
+        self.batchDelegate?.updateAccelerometerMode(self.bluetoothKit.accelerometerMode)
         print("🔧 BatchDataConsoleLogger 설정 완료 - 선택된 센서: \(self.selectedSensors.map { $0.displayName }.joined(separator: ", "))")
     }
     
