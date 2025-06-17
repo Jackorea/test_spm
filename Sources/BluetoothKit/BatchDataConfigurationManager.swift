@@ -249,15 +249,16 @@ public class BatchDataConfigurationManager {
         }
     }
     
-    /// 수집 모드 업데이트
+    /// 수집 모드를 업데이트합니다.
+    /// 모니터링 중이면 모든 센서를 새로운 모드로 재설정합니다.
     public func updateCollectionMode(_ mode: CollectionMode) {
         guard selectedCollectionMode != mode else { return }
+        print("🔄 수집 모드 변경: \(selectedCollectionMode.displayName) → \(mode.displayName)")
         selectedCollectionMode = mode
-        print("🔄 수집 모드 변경: \(mode.displayName)")
         
-        // 모니터링 중이라면 설정 재적용
         if isMonitoringActive {
-            configureAllSensors()
+            self.configureAllSensors()
+            print("✅ 모니터링 중 모드 변경 - 모든 센서 재설정 완료")
         }
     }
     
@@ -500,6 +501,8 @@ public class BatchDataConfigurationManager {
         self.ensureConfigurationExists(for: sensor)
         self.sensorConfigurations[sensor]?.duration = value
         self.sensorConfigurations[sensor]?.durationText = "\(value)"
+        
+        print("⏱️ \(sensor.displayName) 시간 설정 변경: \(value)초")
         
         // 모니터링 중이라면 센서 재설정
         if isMonitoringActive && self.selectedSensors.contains(sensor) {
