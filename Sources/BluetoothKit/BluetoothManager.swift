@@ -1,12 +1,27 @@
 import Foundation
 import CoreBluetooth
 
-// MARK: - Bluetooth Manager
+// MARK: - BluetoothManager (Pure Business Logic)
 
-/// Core Bluetooth를 사용한 디바이스 연결 및 데이터 통신을 관리하는 클래스입니다.
+/// Core Bluetooth를 사용한 디바이스 연결 및 데이터 통신을 관리하는 순수 비즈니스 로직 클래스입니다.
 ///
-/// 이 클래스는 Bluetooth LE 디바이스의 스캔, 연결, 서비스 및 특성 탐지,
-/// 데이터 읽기/쓰기 기능을 제공합니다. BluetoothKit의 내부 구현체로 사용됩니다.
+/// 이 클래스는 UI 프레임워크와 독립적으로 작동하며, 델리게이트 패턴을 통해 상태 변화를 알립니다.
+/// Bluetooth LE 디바이스의 스캔, 연결, 서비스 및 특성 탐지, 데이터 읽기/쓰기 기능을 제공합니다.
+/// 
+/// **주요 특징:**
+/// - UI 프레임워크 의존성 없음 (순수 비즈니스 로직)
+/// - 델리게이트 패턴을 통한 상태 알림
+/// - 자동 재연결 기능
+/// - 센서별 데이터 수집 제어
+/// - 스레드 안전성 보장
+///
+/// **사용법:**
+/// ```swift
+/// let bluetoothManager = BluetoothManager(configuration: config, logger: logger)
+/// bluetoothManager.delegate = self
+/// bluetoothManager.sensorDataDelegate = self
+/// bluetoothManager.startScanning()
+/// ```
 internal class BluetoothManager: NSObject, @unchecked Sendable {
     
     // MARK: - Properties
