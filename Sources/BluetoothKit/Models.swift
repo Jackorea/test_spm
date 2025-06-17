@@ -1056,7 +1056,7 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
                 let linearY = Int16(Double(reading.y) - gravityY)
                 let linearZ = Int16(Double(reading.z) - gravityZ)
                 
-                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), LINEAR_X=\(linearX), LINEAR_Y=\(linearY), LINEAR_Z=\(linearZ)")
+                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(linearX), Y=\(linearY), Z=\(linearZ)")
             }
         }
         print("") // 배치 간 구분을 위한 빈 줄
