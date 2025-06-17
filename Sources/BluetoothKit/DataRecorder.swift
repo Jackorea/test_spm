@@ -32,7 +32,7 @@ internal class DataRecorder: @unchecked Sendable {
     
     private var recordingState: RecordingState = .idle
     private let logger: InternalLogger
-    private var selectedSensorTypes: Set<SensorType> = []
+    private var selectedSensorTypes: Set<SensorType> = [.eeg, .ppg, .accelerometer]
     
     // Unified file writers using a serial queue for thread safety
     private let fileQueue = DispatchQueue(label: "com.bluetoothkit.filewriter", qos: .utility)
@@ -42,6 +42,16 @@ internal class DataRecorder: @unchecked Sendable {
     // Raw data storage for JSON - protected by main actor
     private var rawDataDict: [String: Any] = [:]
     private var currentRecordingFiles: [URL] = []
+    
+    // 가속도계 모드 추적
+    private var accelerometerMode: AccelerometerMode = .raw
+    
+    // 중력 추정값 저장 (움직임 모드용)
+    private var gravityX: Double = 0
+    private var gravityY: Double = 0
+    private var gravityZ: Double = 0
+    private var isGravityInitialized = false
+    private let gravityFilterFactor: Double = 0.1
     
     // MARK: - Initialization
     
@@ -136,6 +146,15 @@ internal class DataRecorder: @unchecked Sendable {
         selectedSensorTypes = selectedSensors
     }
     
+    /// 가속도계 모드를 업데이트합니다.
+    ///
+    /// 기록할 때 원시값 또는 선형 가속도 값을 선택할 수 있습니다.
+    ///
+    /// - Parameter mode: 가속도계 모드 (.raw 또는 .motion)
+    public func updateAccelerometerMode(_ mode: AccelerometerMode) {
+        accelerometerMode = mode
+    }
+    
     /// 센서 타입을 문자열로 변환하는 헬퍼 메서드
     private func sensorTypeToString(_ sensorType: SensorType) -> String {
         switch sensorType {
@@ -194,14 +213,16 @@ internal class DataRecorder: @unchecked Sendable {
         guard canRecord(.accelerometer) else { return }
         
         for reading in readings {
+            let (x, y, z) = getAccelerometerValues(reading)
+            
             recordSensorData(
                 sensorType: .accelerometer,
                 timestamp: reading.timestamp,
-                csvData: [reading.x, reading.y, reading.z],
+                csvData: [x, y, z],
                 rawDataEntries: [
-                    ("accelX", Int(reading.x)),
-                    ("accelY", Int(reading.y)),
-                    ("accelZ", Int(reading.z))
+                    ("accelX", Int(x)),
+                    ("accelY", Int(y)),
+                    ("accelZ", Int(z))
                 ]
             )
         }
@@ -391,6 +412,37 @@ internal class DataRecorder: @unchecked Sendable {
         notifyOnMainThread { [weak self] in
             guard let self = self else { return }
             self.delegate?.dataRecorder(self, didFailWithError: error)
+        }
+    }
+    
+    /// 중력 성분을 추정하고 업데이트하는 함수 (움직임 모드용)
+    private func updateGravityEstimate(_ reading: AccelerometerReading) {
+        if !isGravityInitialized {
+            // 첫 번째 읽기: 초기값으로 설정
+            gravityX = Double(reading.x)
+            gravityY = Double(reading.y)
+            gravityZ = Double(reading.z)
+            isGravityInitialized = true
+        } else {
+            // 저역 통과 필터를 사용한 중력 추정
+            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
+            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
+            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
+        }
+    }
+    
+    /// 가속도계 모드에 따라 적절한 값을 반환합니다.
+    private func getAccelerometerValues(_ reading: AccelerometerReading) -> (Int16, Int16, Int16) {
+        if accelerometerMode == .raw {
+            // 원시값 모드: 원래 값 반환
+            return (reading.x, reading.y, reading.z)
+        } else {
+            // 움직임 모드: 중력 제거된 선형 가속도 반환
+            updateGravityEstimate(reading)
+            let linearX = Int16(Double(reading.x) - gravityX)
+            let linearY = Int16(Double(reading.y) - gravityY)
+            let linearZ = Int16(Double(reading.z) - gravityZ)
+            return (linearX, linearY, linearZ)
         }
     }
 }

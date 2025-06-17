@@ -348,6 +348,8 @@ public class BluetoothKit: @unchecked Sendable {
     public var accelerometerMode: AccelerometerMode = .raw {
         didSet {
             delegate?.bluetoothKit(self, didUpdateAccelerometerMode: accelerometerMode)
+            // DataRecorder에도 모드 변경 전달
+            dataRecorder.updateAccelerometerMode(accelerometerMode)
         }
     }
     
@@ -476,6 +478,9 @@ public class BluetoothKit: @unchecked Sendable {
         
         // BluetoothManager에 초기 auto-reconnect 설정 전달
         bluetoothManager.enableAutoReconnect(true)
+        
+        // DataRecorder에 초기 가속도계 모드 설정
+        dataRecorder.updateAccelerometerMode(accelerometerMode)
     }
     
     // MARK: - Public Interface
