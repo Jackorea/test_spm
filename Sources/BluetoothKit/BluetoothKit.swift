@@ -1063,41 +1063,5 @@ extension BluetoothKit: DataRecorderDelegate {
 
 @available(iOS 13.0, macOS 10.15, *)
 extension BluetoothKit {
-    
-    /// 내부 로깅 메서드
-    private func log(_ message: String) {
-        logger.log(message)
-    }
-    
-    /// 중력 성분을 추정하고 업데이트하는 함수 (움직임 모드용)
-    private func updateGravityEstimate(_ reading: AccelerometerReading) {
-        if !isGravityInitialized {
-            // 첫 번째 읽기: 초기값으로 설정
-            gravityX = Double(reading.x)
-            gravityY = Double(reading.y)
-            gravityZ = Double(reading.z)
-            isGravityInitialized = true
-        } else {
-            // 저역 통과 필터를 사용한 중력 추정
-            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
-            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
-            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
-        }
-    }
-    
-    /// 가속도계 모드에 따라 처리된 데이터를 생성합니다.
-    private func processAccelerometerReading(_ reading: AccelerometerReading) -> AccelerometerReading {
-        if accelerometerMode == .raw {
-            // 원시값 모드: 원래 데이터 그대로 반환
-            return reading
-        } else {
-            // 움직임 모드: 중력 제거된 선형 가속도 반환
-            updateGravityEstimate(reading)
-            let linearX = Int16(Double(reading.x) - gravityX)
-            let linearY = Int16(Double(reading.y) - gravityY)
-            let linearZ = Int16(Double(reading.z) - gravityZ)
-            
-            return AccelerometerReading(x: linearX, y: linearY, z: linearZ, timestamp: reading.timestamp)
-        }
-    }
+    // Duplicate functions removed - they are already defined earlier in the file
 } 
