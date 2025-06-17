@@ -1050,13 +1050,13 @@ public class BatchDataConsoleLogger: SensorBatchDataDelegate {
                 // 원시값 모드: 원래대로 출력
                 print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
             } else {
-                // 움직임 모드: 중력 제거된 선형 가속도 계산 및 출력
+                // 움직임 모드: 중력 제거된 선형 가속도만 출력
                 updateGravityEstimate(reading)
                 let linearX = Int16(Double(reading.x) - gravityX)
                 let linearY = Int16(Double(reading.y) - gravityY)
                 let linearZ = Int16(Double(reading.z) - gravityZ)
                 
-                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), RAW_X=\(reading.x), RAW_Y=\(reading.y), RAW_Z=\(reading.z), LINEAR_X=\(linearX), LINEAR_Y=\(linearY), LINEAR_Z=\(linearZ)")
+                print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), LINEAR_X=\(linearX), LINEAR_Y=\(linearY), LINEAR_Z=\(linearZ)")
             }
         }
         print("") // 배치 간 구분을 위한 빈 줄
