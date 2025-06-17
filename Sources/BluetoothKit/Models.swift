@@ -16,15 +16,7 @@ import CoreBluetooth
 ///     bluetoothKit.connect(to: device)
 /// }
 /// ```
-public struct BluetoothDevice: @unchecked Sendable, Identifiable {
-    /// 디바이스의 고유 식별자입니다.
-    ///
-    /// Identifiable 프로토콜을 위한 고유 ID로, peripheral의 identifier를 기반으로 합니다.
-    /// UI에서 ForEach 등에서 안전하게 사용할 수 있습니다.
-    public var id: UUID {
-        return peripheral.identifier
-    }
-    
+public struct BluetoothDevice: @unchecked Sendable {
     /// Core Bluetooth 페리페럴 객체입니다.
     ///
     /// 실제 BLE 통신을 위해 사용되는 CBPeripheral 인스턴스입니다.
@@ -58,6 +50,11 @@ public struct BluetoothDevice: @unchecked Sendable, Identifiable {
 
 // MARK: - Sensor Data Models
 
+/// 센서 읽기값의 기본 프로토콜입니다.
+internal protocol SensorReading: Sendable {
+    var timestamp: Date { get }
+}
+
 /// EEG(뇌전도) 센서 읽기값을 나타내는 구조체입니다.
 ///
 /// 이 구조체는 2채널 EEG 데이터와 관련 메타데이터를 포함합니다.
@@ -74,7 +71,7 @@ public struct BluetoothDevice: @unchecked Sendable, Identifiable {
 ///     leadOff: false
 /// )
 /// ```
-public struct EEGReading: Sendable {
+public struct EEGReading: SensorReading {
     /// 채널 1의 EEG 전압값 (마이크로볼트 단위)
     ///
     /// 첫 번째 EEG 전극에서 측정된 전압입니다.
@@ -138,7 +135,7 @@ public struct EEGReading: Sendable {
 ///     ir: 134567
 /// )
 /// ```
-public struct PPGReading: Sendable {
+public struct PPGReading: SensorReading {
     /// 적색 LED에서 반사된 빛의 강도를 측정한 값입니다.
     public let red: Int
     
@@ -175,7 +172,7 @@ public struct PPGReading: Sendable {
 ///     z: 0       //
 /// )
 /// ```
-public struct AccelerometerReading: Sendable {
+public struct AccelerometerReading: SensorReading {
     /// X축 가속도 값입니다.
     ///
     /// 디바이스의 좌우 방향 가속도를 나타냅니다.
@@ -219,7 +216,7 @@ public struct AccelerometerReading: Sendable {
 /// let batteryReading = BatteryReading(level: 85)
 /// print("배터리 잔량: \(batteryReading.level)%")
 /// ```
-public struct BatteryReading: Sendable {
+public struct BatteryReading: SensorReading {
     /// 배터리 잔량 백분율입니다.
     ///
     /// 0%에서 100% 사이의 값으로 배터리 충전 상태를 나타냅니다.
@@ -365,7 +362,7 @@ internal enum RecordingState: Sendable {
     }
 }
 
-// MARK: - Sensor Configuration (Internal)
+// MARK: - Hardware Configuration (Internal)
 
 /// 센서의 내부 설정을 관리하는 구조체입니다.
 ///
@@ -409,7 +406,7 @@ internal struct SensorConfiguration: Sendable {
     internal static let `default` = SensorConfiguration()
 }
 
-// MARK: - Sensor UUIDs (Internal)
+// MARK: - Bluetooth UUIDs (Internal)
 
 /// Bluetooth 서비스 및 특성 UUID를 포함하는 내부 구조체입니다.
 ///
@@ -702,13 +699,10 @@ internal enum BluetoothKitError: LocalizedError, Sendable, Equatable {
         switch (lhs, rhs) {
         case (.bluetoothUnavailable, .bluetoothUnavailable), (.deviceNotFound, .deviceNotFound):
             return true
-        case (.connectionFailed(let lhsReason), .connectionFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.dataParsingFailed(let lhsReason), .dataParsingFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.recordingFailed(let lhsReason), .recordingFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.fileOperationFailed(let lhsReason), .fileOperationFailed(let rhsReason)):
+        case (.connectionFailed(let lhsReason), .connectionFailed(let rhsReason)),
+             (.dataParsingFailed(let lhsReason), .dataParsingFailed(let rhsReason)),
+             (.recordingFailed(let lhsReason), .recordingFailed(let rhsReason)),
+             (.fileOperationFailed(let lhsReason), .fileOperationFailed(let rhsReason)):
             return lhsReason == rhsReason
         default:
             return false
@@ -727,45 +721,29 @@ public enum SensorType: String, CaseIterable, Sendable {
     case accelerometer = "Accelerometer"
     case battery = "Battery"
     
-    /// 각 센서의 샘플링 레이트를 반환합니다.
-    public var sampleRate: Double {
+    /// 센서별 설정 정보를 관리하는 구조체입니다.
+    public struct Properties {
+        public let sampleRate: Double
+        public let displayName: String
+        public let emoji: String
+        public let color: String
+    }
+    
+    /// 각 센서의 속성을 반환합니다.
+    public var properties: Properties {
         switch self {
-        case .eeg: return 250.0
-        case .ppg: return 50.0
-        case .accelerometer: return 30.0
-        case .battery: return 1.0 / 60.0  // 1분마다
+        case .eeg: return Properties(sampleRate: 250.0, displayName: "EEG", emoji: "🧠", color: "blue")
+        case .ppg: return Properties(sampleRate: 50.0, displayName: "PPG", emoji: "❤️", color: "red")
+        case .accelerometer: return Properties(sampleRate: 30.0, displayName: "ACC", emoji: "🏃", color: "green")
+        case .battery: return Properties(sampleRate: 1.0/60.0, displayName: "배터리", emoji: "🔋", color: "orange")
         }
     }
     
-    /// UI에서 표시하기 위한 짧은 이름을 반환합니다.
-    public var displayName: String {
-        switch self {
-        case .eeg: return "EEG"
-        case .ppg: return "PPG"
-        case .accelerometer: return "ACC"
-        case .battery: return "배터리"
-        }
-    }
-    
-    /// UI에서 표시하기 위한 이모지를 반환합니다.
-    public var emoji: String {
-        switch self {
-        case .eeg: return "🧠"
-        case .ppg: return "❤️"
-        case .accelerometer: return "🏃"
-        case .battery: return "🔋"
-        }
-    }
-    
-    /// UI에서 표시하기 위한 색상을 반환합니다.
-    public var color: String {
-        switch self {
-        case .eeg: return "blue"
-        case .ppg: return "red"
-        case .accelerometer: return "green"
-        case .battery: return "orange"
-        }
-    }
+    // Convenience accessors
+    public var sampleRate: Double { properties.sampleRate }
+    public var displayName: String { properties.displayName }
+    public var emoji: String { properties.emoji }
+    public var color: String { properties.color }
     
     /// 주어진 샘플 수에 대한 예상 시간을 계산합니다.
     public func expectedTime(for sampleCount: Int) -> Double {
@@ -839,158 +817,145 @@ internal struct DataCollectionConfig {
     let sensorType: SensorType
     let mode: Mode
     
-    // 샘플 개수 기반 모드용 편의 프로퍼티
     var targetSampleCount: Int? {
-        if case .sampleCount(let count) = mode {
-            return count
-        }
+        if case .sampleCount(let count) = mode { return count }
         return nil
     }
     
-    // 시간 간격 기반 모드용 편의 프로퍼티
     var targetTimeInterval: TimeInterval? {
-        if case .timeInterval(let interval) = mode {
-            return interval
-        }
+        if case .timeInterval(let interval) = mode { return interval }
         return nil
     }
     
     init(sensorType: SensorType, sampleCount: Int) {
         self.sensorType = sensorType
-        self.mode = .sampleCount(max(1, sampleCount))  // 최소 1개만 보장
+        self.mode = .sampleCount(max(1, sampleCount))
     }
     
     init(sensorType: SensorType, timeInterval: TimeInterval) {
         self.sensorType = sensorType
-        self.mode = .timeInterval(max(0.001, timeInterval))  // 최소 1ms
+        self.mode = .timeInterval(max(0.001, timeInterval))
     }
 }
 
-// MARK: - Default Console Logger Implementation
+// MARK: - Console Logger Implementation
+
+/// 콘솔 로깅을 위한 헬퍼 구조체입니다.
+internal struct ConsoleLogHelper {
+    static func formatTimestamp(_ date: Date) -> String {
+        return String(format: "%.3f", date.timeIntervalSince1970)
+    }
+    
+    static func formatElapsed(since startTime: Date) -> String {
+        return String(format: "%.1f", Date().timeIntervalSince(startTime))
+    }
+    
+    static func logBatchHeader(emoji: String, sensorName: String, batchNumber: Int, sampleCount: Int, elapsed: String) {
+        print("\(emoji) \(sensorName) 배치 #\(batchNumber) 수신 - \(sampleCount)개 샘플 (경과: \(elapsed)초)")
+    }
+    
+    static func logSample(index: Int, timestamp: String, values: [String]) {
+        let valueString = values.joined(separator: ", ")
+        print("   📊 샘플 #\(index + 1): TIMESTAMP=\(timestamp), \(valueString)")
+    }
+}
 
 /// 배치 센서 데이터를 콘솔에 출력하는 기본 구현체입니다.
-///
-/// SDK 사용자가 빠르게 데이터 모니터링을 시작할 수 있도록 제공되는 유틸리티 클래스입니다.
-/// 실제 프로덕션에서는 이를 참고하여 커스텀 델리게이트를 구현하는 것을 권장합니다.
-///
-/// ## 사용 예시
-///
-/// ```swift
-/// let bluetoothKit = BluetoothKit()
-/// let consoleLogger = BatchDataConsoleLogger()
-/// 
-/// // 선택된 센서만 콘솔에 출력하도록 설정
-/// consoleLogger.updateSelectedSensors([.eeg, .ppg])
-/// bluetoothKit.batchDataDelegate = consoleLogger
-/// 
-/// // 배치 데이터 수집 설정
-/// bluetoothKit.setDataCollection(sampleCount: 100, for: .eeg)
-/// ```
 public class BatchDataConsoleLogger: SensorBatchDataDelegate {
     private var batchCount: [String: Int] = [:]
     private let startTime = Date()
     private var _selectedSensors: Set<SensorType> = []
-    
-    // Thread-safe access to selectedSensors using concurrent queue
     private let sensorAccessQueue = DispatchQueue(label: "com.bluetoothkit.sensorsAccess", attributes: .concurrent)
     
     private var selectedSensors: Set<SensorType> {
         get {
-            return sensorAccessQueue.sync {
-                return _selectedSensors
-            }
+            return sensorAccessQueue.sync { _selectedSensors }
         }
         set {
-            sensorAccessQueue.async(flags: .barrier) {
-                self._selectedSensors = newValue
-            }
+            sensorAccessQueue.async(flags: .barrier) { self._selectedSensors = newValue }
         }
     }
     
-    /// 새로운 BatchDataConsoleLogger 인스턴스를 생성합니다.
     public init() {}
     
-    /// 선택된 센서를 업데이트하는 메서드
-    ///
-    /// 설정된 센서의 데이터만 콘솔에 출력됩니다.
-    /// 빈 세트를 전달하면 모든 출력이 중지됩니다.
-    ///
-    /// - Parameter sensors: 콘솔에 출력할 센서 타입들의 집합
     public func updateSelectedSensors(_ sensors: Set<SensorType>) {
         selectedSensors = sensors
-        print("📝 콘솔 출력 설정 업데이트: \(sensors.map { sensorTypeToString($0) }.joined(separator: ", "))")
     }
     
-    private func sensorTypeToString(_ sensorType: SensorType) -> String {
-        switch sensorType {
-        case .eeg: return "EEG"
-        case .ppg: return "PPG"
-        case .accelerometer: return "ACC"
-        case .battery: return "배터리"
+    private func logBatch<T: SensorReading>(
+        sensorType: SensorType,
+        readings: [T],
+        formatValues: (T) -> [String]
+    ) {
+        guard selectedSensors.contains(sensorType) else { return }
+        
+        let sensorName = sensorType.displayName
+        let count = (batchCount[sensorName] ?? 0) + 1
+        batchCount[sensorName] = count
+        let elapsed = ConsoleLogHelper.formatElapsed(since: startTime)
+        
+        ConsoleLogHelper.logBatchHeader(
+            emoji: sensorType.emoji,
+            sensorName: sensorName,
+            batchNumber: count,
+            sampleCount: readings.count,
+            elapsed: elapsed
+        )
+        
+        for (index, reading) in readings.enumerated() {
+            let timestamp = ConsoleLogHelper.formatTimestamp(reading.timestamp)
+            let values = formatValues(reading)
+            ConsoleLogHelper.logSample(index: index, timestamp: timestamp, values: values)
         }
+        print("") // 배치 간 구분을 위한 빈 줄
     }
     
     public func didReceiveEEGBatch(_ readings: [EEGReading]) {
-        // EEG가 선택된 센서에 포함되어 있을 때만 출력
-        guard selectedSensors.contains(.eeg) else { return }
-        
-        let count = (batchCount["EEG"] ?? 0) + 1
-        batchCount["EEG"] = count
-        let elapsed = Date().timeIntervalSince(startTime)
-        
-        print("🧠 EEG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
-        
-        // 모든 EEG 샘플 출력 (원본 타임스탬프만)
-        for (index, reading) in readings.enumerated() {
-            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
-            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), CH1_RAW=\(reading.ch1Raw), CH2_RAW=\(reading.ch2Raw), CH1=\(String(format: "%.1f", reading.channel1))µV, CH2=\(String(format: "%.1f", reading.channel2))µV, LEAD_OFF=\(reading.leadOff ? 1 : 0)")
+        logBatch(sensorType: .eeg, readings: readings) { reading in
+            [
+                "CH1_RAW=\(reading.ch1Raw)",
+                "CH2_RAW=\(reading.ch2Raw)",
+                "CH1=\(String(format: "%.1f", reading.channel1))µV",
+                "CH2=\(String(format: "%.1f", reading.channel2))µV",
+                "LEAD_OFF=\(reading.leadOff ? 1 : 0)"
+            ]
         }
-        print("") // 배치 간 구분을 위한 빈 줄
     }
     
     public func didReceivePPGBatch(_ readings: [PPGReading]) {
-        // PPG가 선택된 센서에 포함되어 있을 때만 출력
-        guard selectedSensors.contains(.ppg) else { return }
-        
-        let count = (batchCount["PPG"] ?? 0) + 1
-        batchCount["PPG"] = count
-        let elapsed = Date().timeIntervalSince(startTime)
-        
-        print("❤️ PPG 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
-        
-        // 모든 PPG 샘플 출력 (원본 타임스탬프만)
-        for (index, reading) in readings.enumerated() {
-            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
-            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), RED=\(reading.red), IR=\(reading.ir)")
+        logBatch(sensorType: .ppg, readings: readings) { reading in
+            ["RED=\(reading.red)", "IR=\(reading.ir)"]
         }
-        print("") // 배치 간 구분을 위한 빈 줄
     }
     
     public func didReceiveAccelerometerBatch(_ readings: [AccelerometerReading]) {
-        // 가속도계가 선택된 센서에 포함되어 있을 때만 출력
-        guard selectedSensors.contains(.accelerometer) else { return }
-        
-        let count = (batchCount["ACCEL"] ?? 0) + 1
-        batchCount["ACCEL"] = count
-        let elapsed = Date().timeIntervalSince(startTime)
-        
-        print("🏃 ACC 배치 #\(count) 수신 - \(readings.count)개 샘플 (경과: \(String(format: "%.1f", elapsed))초)")
-        
-        // 모든 ACC 샘플 출력 (원본 타임스탬프만)
-        for (index, reading) in readings.enumerated() {
-            let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
-            print("   📊 샘플 #\(index + 1): TIMESTAMP=\(unixTimestamp), X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+        logBatch(sensorType: .accelerometer, readings: readings) { reading in
+            ["X=\(reading.x)", "Y=\(reading.y)", "Z=\(reading.z)"]
         }
-        print("") // 배치 간 구분을 위한 빈 줄
     }
     
     public func didReceiveBatteryUpdate(_ reading: BatteryReading) {
-        // 배터리가 선택된 센서에 포함되어 있을 때만 출력
         guard selectedSensors.contains(.battery) else { return }
         
-        let elapsed = Date().timeIntervalSince(startTime)
-        let unixTimestamp = String(format: "%.3f", reading.timestamp.timeIntervalSince1970)
-        print("🔋 배터리 업데이트 - TIMESTAMP=\(unixTimestamp), LEVEL=\(reading.level)% (경과: \(String(format: "%.1f", elapsed))초)")
-        print("") // 다른 로그와 구분을 위한 빈 줄
+        let elapsed = ConsoleLogHelper.formatElapsed(since: startTime)
+        let timestamp = ConsoleLogHelper.formatTimestamp(reading.timestamp)
+        print("🔋 배터리 업데이트 - TIMESTAMP=\(timestamp), LEVEL=\(reading.level)% (경과: \(elapsed)초)")
+        print("")
+    }
+}
+
+/// 가속도계 데이터 모드를 나타내는 열거형입니다.
+public enum AccelerometerMode: String, CaseIterable {
+    case raw = "원시값"
+    case motion = "움직임"
+    
+    /// UI에서 표시하기 위한 설명을 반환합니다.
+    public var description: String {
+        switch self {
+        case .raw:
+            return "센서 원시값 (중력 포함)"
+        case .motion:
+            return "순수 움직임 (중력 제거)"
+        }
     }
 } 
