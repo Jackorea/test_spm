@@ -602,6 +602,21 @@ public class BluetoothKit: ObservableObject, @unchecked Sendable {
         log("센서 선택 업데이트됨: \(selectedSensors.map { $0.rawValue }.joined(separator: ", "))")
     }
     
+    /// 선택된 센서를 설정합니다.
+    ///
+    /// - Parameter sensors: 모니터링할 센서 타입들의 집합
+    ///
+    /// ## 예시
+    ///
+    /// ```swift
+    /// // EEG와 PPG 센서만 선택
+    /// bluetoothKit.setSelectedSensors([.eeg, .ppg])
+    /// ```
+    public func setSelectedSensors(_ sensors: Set<SensorType>) {
+        bluetoothManager.setSelectedSensors(sensors)
+        log("센서 선택 설정됨: \(sensors.map { $0.rawValue }.joined(separator: ", "))")
+    }
+    
     // MARK: - Private Setup
     
     private func setupDelegates() {
