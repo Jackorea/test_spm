@@ -1,11 +1,28 @@
 import Foundation
 
-// MARK: - Data Recorder
+// MARK: - DataRecorder (Pure Business Logic)
 
-/// 센서 데이터를 CSV 파일로 기록하고 관리하는 클래스입니다.
+/// 센서 데이터를 CSV 및 JSON 파일로 기록하고 관리하는 순수 비즈니스 로직 클래스입니다.
 ///
-/// 이 클래스는 실시간으로 수신되는 센서 데이터를 백그라운드에서 
-/// 효율적으로 CSV 파일에 저장합니다. BluetoothKit의 내부 구현체로 사용됩니다.
+/// 이 클래스는 UI 프레임워크와 독립적으로 작동하며, 델리게이트 패턴을 통해 기록 이벤트를 알립니다.
+/// 실시간으로 수신되는 센서 데이터를 백그라운드에서 효율적으로 파일에 저장합니다.
+/// 
+/// **주요 특징:**
+/// - UI 프레임워크 의존성 없음 (순수 비즈니스 로직)
+/// - 델리게이트 패턴을 통한 기록 이벤트 알림
+/// - CSV와 JSON 형식으로 동시 저장
+/// - 센서별 선택적 기록 지원
+/// - 스레드 안전성 보장
+/// - 파일 I/O 최적화
+///
+/// **사용법:**
+/// ```swift
+/// let dataRecorder = DataRecorder(logger: logger)
+/// dataRecorder.delegate = self
+/// dataRecorder.startRecording(with: [.eeg, .ppg])
+/// // ... 데이터 수신 및 기록
+/// dataRecorder.stopRecording()
+/// ```
 internal class DataRecorder: @unchecked Sendable {
     
     // MARK: - Properties
