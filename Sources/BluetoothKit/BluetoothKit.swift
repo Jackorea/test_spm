@@ -348,8 +348,6 @@ public class BluetoothKit: @unchecked Sendable {
     public var accelerometerMode: AccelerometerMode = .raw {
         didSet {
             delegate?.bluetoothKit(self, didUpdateAccelerometerMode: accelerometerMode)
-            // DataRecorder에도 모드 변경 전달
-            dataRecorder.updateAccelerometerMode(accelerometerMode)
         }
     }
     
@@ -388,6 +386,13 @@ public class BluetoothKit: @unchecked Sendable {
     private var eegTimeBatchManager: TimeBatchManager<EEGReading>?
     private var ppgTimeBatchManager: TimeBatchManager<PPGReading>?
     private var accelerometerTimeBatchManager: TimeBatchManager<AccelerometerReading>?
+    
+    // 가속도계 모드 처리용 중력 추정값 (DataRecorder와 동기화)
+    private var gravityX: Double = 0
+    private var gravityY: Double = 0
+    private var gravityZ: Double = 0
+    private var isGravityInitialized = false
+    private let gravityFilterFactor: Double = 0.1
     
     // MARK: - Private Components
     
@@ -478,9 +483,6 @@ public class BluetoothKit: @unchecked Sendable {
         
         // BluetoothManager에 초기 auto-reconnect 설정 전달
         bluetoothManager.enableAutoReconnect(true)
-        
-        // DataRecorder에 초기 가속도계 모드 설정
-        dataRecorder.updateAccelerometerMode(accelerometerMode)
     }
     
     // MARK: - Public Interface
@@ -907,6 +909,43 @@ public class BluetoothKit: @unchecked Sendable {
     public func setAutoReconnect(enabled: Bool) {
         isAutoReconnectEnabled = enabled
     }
+    
+    /// 내부 로깅 메서드
+    private func log(_ message: String) {
+        logger.log(message)
+    }
+    
+    /// 중력 성분을 추정하고 업데이트하는 함수 (움직임 모드용)
+    private func updateGravityEstimate(_ reading: AccelerometerReading) {
+        if !isGravityInitialized {
+            // 첫 번째 읽기: 초기값으로 설정
+            gravityX = Double(reading.x)
+            gravityY = Double(reading.y)
+            gravityZ = Double(reading.z)
+            isGravityInitialized = true
+        } else {
+            // 저역 통과 필터를 사용한 중력 추정
+            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
+            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
+            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
+        }
+    }
+    
+    /// 가속도계 모드에 따라 처리된 데이터를 생성합니다.
+    private func processAccelerometerReading(_ reading: AccelerometerReading) -> AccelerometerReading {
+        if accelerometerMode == .raw {
+            // 원시값 모드: 원래 데이터 그대로 반환
+            return reading
+        } else {
+            // 움직임 모드: 중력 제거된 선형 가속도 반환
+            updateGravityEstimate(reading)
+            let linearX = Int16(Double(reading.x) - gravityX)
+            let linearY = Int16(Double(reading.y) - gravityY)
+            let linearZ = Int16(Double(reading.z) - gravityZ)
+            
+            return AccelerometerReading(x: linearX, y: linearY, z: linearZ, timestamp: reading.timestamp)
+        }
+    }
 }
 
 // MARK: - BluetoothManagerDelegate
@@ -974,14 +1013,19 @@ extension BluetoothKit: SensorDataDelegate {
     }
     
     internal func didReceiveAccelerometerData(_ reading: AccelerometerReading) {
-        latestAccelerometerReading = reading
+        // 가속도계 모드에 따라 데이터 처리 (원시값 또는 선형 가속도)
+        let processedReading = processAccelerometerReading(reading)
+        
+        // 처리된 데이터를 최신 읽기값으로 저장
+        latestAccelerometerReading = processedReading
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.accelerometer] != nil {
-            dataRecorder.recordAccelerometerData([reading])
+            dataRecorder.recordAccelerometerData([processedReading])
         }
         
-        addToAccelerometerBuffer(reading)
+        // 배치 처리에도 처리된 데이터 사용
+        addToAccelerometerBuffer(processedReading)
     }
     
     internal func didReceiveBatteryData(_ reading: BatteryReading) {
@@ -1023,5 +1067,37 @@ extension BluetoothKit {
     /// 내부 로깅 메서드
     private func log(_ message: String) {
         logger.log(message)
+    }
+    
+    /// 중력 성분을 추정하고 업데이트하는 함수 (움직임 모드용)
+    private func updateGravityEstimate(_ reading: AccelerometerReading) {
+        if !isGravityInitialized {
+            // 첫 번째 읽기: 초기값으로 설정
+            gravityX = Double(reading.x)
+            gravityY = Double(reading.y)
+            gravityZ = Double(reading.z)
+            isGravityInitialized = true
+        } else {
+            // 저역 통과 필터를 사용한 중력 추정
+            gravityX = gravityX * (1 - gravityFilterFactor) + Double(reading.x) * gravityFilterFactor
+            gravityY = gravityY * (1 - gravityFilterFactor) + Double(reading.y) * gravityFilterFactor
+            gravityZ = gravityZ * (1 - gravityFilterFactor) + Double(reading.z) * gravityFilterFactor
+        }
+    }
+    
+    /// 가속도계 모드에 따라 처리된 데이터를 생성합니다.
+    private func processAccelerometerReading(_ reading: AccelerometerReading) -> AccelerometerReading {
+        if accelerometerMode == .raw {
+            // 원시값 모드: 원래 데이터 그대로 반환
+            return reading
+        } else {
+            // 움직임 모드: 중력 제거된 선형 가속도 반환
+            updateGravityEstimate(reading)
+            let linearX = Int16(Double(reading.x) - gravityX)
+            let linearY = Int16(Double(reading.y) - gravityY)
+            let linearZ = Int16(Double(reading.z) - gravityZ)
+            
+            return AccelerometerReading(x: linearX, y: linearY, z: linearZ, timestamp: reading.timestamp)
+        }
     }
 } 
