@@ -591,6 +591,58 @@ public class BluetoothKit: @unchecked Sendable {
         return bluetoothManager.isConnected
     }
     
+    // MARK: - Sensor Monitoring Control
+    
+    /// 센서 모니터링을 활성화합니다.
+    ///
+    /// 연결된 디바이스로부터 선택된 센서의 데이터 수신을 시작합니다.
+    /// 모니터링이 활성화되면 최신 센서 데이터가 실시간으로 업데이트됩니다.
+    ///
+    /// ## 예시
+    /// ```swift
+    /// // 센서 선택 후 모니터링 시작
+    /// bluetoothKit.setSelectedSensors([.eeg, .ppg])
+    /// bluetoothKit.enableMonitoring()
+    /// ```
+    public func enableMonitoring() {
+        bluetoothManager.enableMonitoring()
+    }
+    
+    /// 센서 모니터링을 비활성화합니다.
+    ///
+    /// 모든 센서의 데이터 수신을 중지합니다 (배터리 센서 제외).
+    /// 최신 센서 데이터 업데이트가 중단됩니다.
+    ///
+    /// ## 예시
+    /// ```swift
+    /// bluetoothKit.disableMonitoring()
+    /// ```
+    public func disableMonitoring() {
+        bluetoothManager.disableMonitoring()
+    }
+    
+    /// 모니터링할 센서 타입을 설정합니다.
+    ///
+    /// 지정된 센서들만 데이터를 수신하고 배치 수집이나 기록에 포함됩니다.
+    /// 연결 상태와 관계없이 설정할 수 있으며, 연결 후 자동으로 적용됩니다.
+    ///
+    /// - Parameter sensors: 모니터링할 센서 타입들의 집합
+    ///
+    /// ## 예시
+    /// ```swift
+    /// // EEG와 PPG만 모니터링
+    /// bluetoothKit.setSelectedSensors([.eeg, .ppg])
+    ///
+    /// // 모든 센서 모니터링
+    /// bluetoothKit.setSelectedSensors([.eeg, .ppg, .accelerometer])
+    ///
+    /// // 센서 모니터링 없음 (배터리만)
+    /// bluetoothKit.setSelectedSensors([])
+    /// ```
+    public func setSelectedSensors(_ sensors: Set<SensorType>) {
+        bluetoothManager.setSelectedSensors(sensors)
+    }
+    
     // MARK: - Batch Data Collection API
     
     /// 시간 간격을 기준으로 배치 데이터 수집을 설정합니다.

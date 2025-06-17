@@ -159,6 +159,12 @@ public class BatchDataConfigurationManager {
     public func startMonitoring() {
         guard !self.selectedSensors.isEmpty else { return }
         
+        // BluetoothKit에 센서 선택 전달
+        self.bluetoothKit.setSelectedSensors(self.selectedSensors)
+        
+        // BluetoothKit의 모니터링 활성화
+        self.bluetoothKit.enableMonitoring()
+        
         self.setupBatchDelegate()
         self.configureAllSensors()
         self.isMonitoringActive = true
@@ -166,6 +172,9 @@ public class BatchDataConfigurationManager {
     }
     
     public func stopMonitoring() {
+        // BluetoothKit의 모니터링 비활성화
+        self.bluetoothKit.disableMonitoring()
+        
         self.bluetoothKit.disableAllDataCollection()
         self.batchDelegate?.updateSelectedSensors(Set<SensorType>())
         self.bluetoothKit.batchDataDelegate = nil
