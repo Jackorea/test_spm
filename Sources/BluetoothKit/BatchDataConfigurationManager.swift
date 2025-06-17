@@ -172,6 +172,9 @@ public class BatchDataConfigurationManager {
     }
     
     public func stopMonitoring() {
+        // BluetoothKit에 빈 센서 세트 설정 (모든 센서 수신 중단)
+        self.bluetoothKit.setSelectedSensors(Set<SensorType>())
+        
         // BluetoothKit의 모니터링 비활성화
         self.bluetoothKit.disableMonitoring()
         
@@ -180,7 +183,7 @@ public class BatchDataConfigurationManager {
         self.bluetoothKit.batchDataDelegate = nil
         self.batchDelegate = nil
         self.isMonitoringActive = false
-        print("❌ 센서 모니터링 중지")
+        print("❌ 센서 모니터링 중지 - 모든 센서 수신 중단")
     }
     
     public func updateSensorSelection(_ sensors: Set<SensorType>) {
