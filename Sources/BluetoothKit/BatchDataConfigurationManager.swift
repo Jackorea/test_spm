@@ -172,10 +172,8 @@ public class BatchDataConfigurationManager {
     }
     
     public func stopMonitoring() {
-        // BluetoothKit에 빈 센서 세트 설정 (모든 센서 수신 중단)
-        self.bluetoothKit.setSelectedSensors(Set<SensorType>())
-        
-        // BluetoothKit의 모니터링 비활성화
+        // BluetoothKit에서 센서 선택을 비우고 모니터링 비활성화
+        self.bluetoothKit.setSelectedSensors([])  // 모든 센서 수신 중단
         self.bluetoothKit.disableMonitoring()
         
         self.bluetoothKit.disableAllDataCollection()

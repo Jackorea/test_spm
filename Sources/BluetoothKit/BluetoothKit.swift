@@ -611,7 +611,7 @@ public class BluetoothKit: @unchecked Sendable {
     /// 센서 모니터링을 비활성화합니다.
     ///
     /// 모든 센서의 데이터 수신을 중지합니다 (배터리 센서 제외).
-    /// 최신 센서 데이터 업데이트가 중단됩니다.
+    /// 최신 센서 데이터 업데이트가 중단되고 모든 데이터 버퍼가 클리어됩니다.
     ///
     /// ## 예시
     /// ```swift
@@ -619,6 +619,12 @@ public class BluetoothKit: @unchecked Sendable {
     /// ```
     public func disableMonitoring() {
         bluetoothManager.disableMonitoring()
+        
+        // 모든 센서 데이터 버퍼 클리어
+        clearAllBuffers()
+        
+        // 배치 데이터 수집도 중단
+        disableAllDataCollection()
     }
     
     /// 모니터링할 센서 타입을 설정합니다.
