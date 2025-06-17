@@ -854,7 +854,7 @@ public class BluetoothKit: @unchecked Sendable {
     /// - Parameter enabled: 자동 재연결 활성화 여부
     public func setAutoReconnect(enabled: Bool) {
         isAutoReconnectEnabled = enabled
-        bluetoothManager.setAutoReconnect(enabled: enabled)
+        bluetoothManager.enableAutoReconnect(enabled)
         delegate?.bluetoothKit(self, didUpdateAutoReconnectState: enabled)
     }
     
