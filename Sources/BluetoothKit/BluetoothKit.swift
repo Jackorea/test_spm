@@ -926,7 +926,7 @@ extension BluetoothKit: SensorDataDelegate {
         
         // 배터리 데이터도 기록 (배치 수집 설정과 무관하게)
         if isRecording {
-            dataRecorder.recordBatteryData([reading])
+            dataRecorder.recordBatteryData(reading)
         }
     }
 }
