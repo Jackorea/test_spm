@@ -364,6 +364,16 @@ public class BatchDataConfigurationManager {
         return self.selectedSensors.contains(sensor)
     }
     
+    /// 가속도계 모드를 업데이트합니다.
+    /// 모니터링 중일 때 실시간으로 콘솔 출력 모드를 변경할 수 있습니다.
+    public func updateAccelerometerMode(_ mode: AccelerometerMode) {
+        // 모니터링 중이고 batchDelegate가 있다면 즉시 모드 업데이트
+        if isMonitoringActive, let delegate = self.batchDelegate {
+            delegate.updateAccelerometerMode(mode)
+            print("🔄 실시간 가속도계 모드 변경: \(mode.description)")
+        }
+    }
+    
     // MARK: - Private Methods
     
     private enum ValueType {
