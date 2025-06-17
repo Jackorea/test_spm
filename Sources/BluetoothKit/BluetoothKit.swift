@@ -831,15 +831,8 @@ public class BluetoothKit: @unchecked Sendable {
         switch config.mode {
         case .timeInterval(let interval):
             // 시간 기반 모드: TimeBatchManager 사용
-            print("🔍 EEG 시간 배치 모드 - 간격: \(interval)초")
             if let timeBatchManager = eegTimeBatchManager,
                let batch = timeBatchManager.addSample(reading) {
-                print("✅ EEG 배치 완성 - \(batch.count)개 샘플")
-                if batchDataDelegate != nil {
-                    print("📤 EEG 배치 델리게이트로 전송")
-                } else {
-                    print("⚠️ EEG 배치 델리게이트가 설정되지 않음")
-                }
                 DispatchQueue.main.async { [weak self] in
                     self?.batchDataDelegate?.didReceiveEEGBatch(batch)
                 }
@@ -867,15 +860,8 @@ public class BluetoothKit: @unchecked Sendable {
         switch config.mode {
         case .timeInterval(let interval):
             // 시간 기반 모드: TimeBatchManager 사용
-            print("🔍 PPG 시간 배치 모드 - 간격: \(interval)초")
             if let timeBatchManager = ppgTimeBatchManager,
                let batch = timeBatchManager.addSample(reading) {
-                print("✅ PPG 배치 완성 - \(batch.count)개 샘플")
-                if batchDataDelegate != nil {
-                    print("📤 PPG 배치 델리게이트로 전송")
-                } else {
-                    print("⚠️ PPG 배치 델리게이트가 설정되지 않음")
-                }
                 DispatchQueue.main.async { [weak self] in
                     self?.batchDataDelegate?.didReceivePPGBatch(batch)
                 }
@@ -903,15 +889,8 @@ public class BluetoothKit: @unchecked Sendable {
         switch config.mode {
         case .timeInterval(let interval):
             // 시간 기반 모드: TimeBatchManager 사용
-            print("🔍 ACC 시간 배치 모드 - 간격: \(interval)초")
             if let timeBatchManager = accelerometerTimeBatchManager,
                let batch = timeBatchManager.addSample(reading) {
-                print("✅ ACC 배치 완성 - \(batch.count)개 샘플")
-                if batchDataDelegate != nil {
-                    print("📤 ACC 배치 델리게이트로 전송")
-                } else {
-                    print("⚠️ ACC 배치 델리게이트가 설정되지 않음")
-                }
                 DispatchQueue.main.async { [weak self] in
                     self?.batchDataDelegate?.didReceiveAccelerometerBatch(batch)
                 }
