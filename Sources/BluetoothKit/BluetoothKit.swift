@@ -933,15 +933,27 @@ public class BluetoothKit: @unchecked Sendable {
     
     /// 가속도계 모드에 따라 처리된 데이터를 생성합니다.
     private func processAccelerometerReading(_ reading: AccelerometerReading) -> AccelerometerReading {
+        print("🔍 processAccelerometerReading 호출됨 - 모드: \(accelerometerMode.description)")
+        print("🔍 입력 데이터: X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+        
         if accelerometerMode == .raw {
             // 원시값 모드: 원래 데이터 그대로 반환
+            print("🔍 원시값 모드 - 원본 데이터 반환")
             return reading
         } else {
             // 움직임 모드: 중력 제거된 선형 가속도 반환
+            print("🔍 움직임 모드 - 중력 제거 처리 시작")
+            print("🔍 처리 전 중력값: X=\(gravityX), Y=\(gravityY), Z=\(gravityZ), 초기화됨: \(isGravityInitialized)")
+            
             updateGravityEstimate(reading)
+            
+            print("🔍 처리 후 중력값: X=\(gravityX), Y=\(gravityY), Z=\(gravityZ)")
+            
             let linearX = Int16(Double(reading.x) - gravityX)
             let linearY = Int16(Double(reading.y) - gravityY)
             let linearZ = Int16(Double(reading.z) - gravityZ)
+            
+            print("🔍 선형 가속도: X=\(linearX), Y=\(linearY), Z=\(linearZ)")
             
             return AccelerometerReading(x: linearX, y: linearY, z: linearZ, timestamp: reading.timestamp)
         }
@@ -1016,11 +1028,19 @@ extension BluetoothKit: SensorDataDelegate {
         // 가속도계 모드에 따라 데이터 처리 (원시값 또는 선형 가속도)
         let processedReading = processAccelerometerReading(reading)
         
+        // 디버깅: 처리 전후 데이터 비교
+        if accelerometerMode == .motion {
+            log("ACC 원본: X=\(reading.x), Y=\(reading.y), Z=\(reading.z)")
+            log("ACC 처리됨: X=\(processedReading.x), Y=\(processedReading.y), Z=\(processedReading.z)")
+        }
+        
         // 처리된 데이터를 최신 읽기값으로 저장
         latestAccelerometerReading = processedReading
         
         // 배치 수집이 설정된 센서만 기록
         if isRecording && dataCollectionConfigs[.accelerometer] != nil {
+            log("ACC 기록 중 - 모드: \(accelerometerMode.description)")
+            print("💾 CSV 저장할 데이터: X=\(processedReading.x), Y=\(processedReading.y), Z=\(processedReading.z)")
             dataRecorder.recordAccelerometerData([processedReading])
         }
         
