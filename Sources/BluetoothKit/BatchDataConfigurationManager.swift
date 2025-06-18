@@ -3,7 +3,7 @@ import Foundation
 // MARK: - BatchDataConfigurationManagerDelegate Protocol
 
 /// BatchDataConfigurationManager의 상태 변화를 알리는 델리게이트 프로토콜
-public protocol BatchDataConfigurationManagerDelegate: AnyObject {
+internal protocol BatchDataConfigurationManagerDelegate: AnyObject {
     /// 수집 모드가 변경되었을 때 호출
     func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateCollectionMode mode: BatchDataConfigurationManager.CollectionMode)
     /// 선택된 센서가 변경되었을 때 호출
@@ -22,30 +22,30 @@ public protocol BatchDataConfigurationManagerDelegate: AnyObject {
 
 /// 배치 데이터 수집 설정을 관리하는 비즈니스 로직 클래스
 /// UI 프레임워크에 의존하지 않는 순수한 비즈니스 로직을 제공합니다.
-public class BatchDataConfigurationManager {
+internal class BatchDataConfigurationManager {
     
     // MARK: - Delegate
     
     /// 상태 변화를 받을 델리게이트
-    public weak var delegate: BatchDataConfigurationManagerDelegate?
+    internal weak var delegate: BatchDataConfigurationManagerDelegate?
     
     // MARK: - Types
     
-    public enum CollectionMode: String, CaseIterable {
+    internal enum CollectionMode: String, CaseIterable {
         case sampleCount = "샘플 수"
         case duration = "시간 (초)"
         
-        public var displayName: String { rawValue }
+        internal var displayName: String { rawValue }
     }
     
     /// 센서 설정을 관리하는 구조체
-    public struct SensorConfiguration {
-        public var sampleCount: Int
-        public var duration: Int
-        public var sampleCountText: String
-        public var durationText: String
+    internal struct SensorConfiguration {
+        internal var sampleCount: Int
+        internal var duration: Int
+        internal var sampleCountText: String
+        internal var durationText: String
         
-        public init(sampleCount: Int, duration: Int) {
+        internal init(sampleCount: Int, duration: Int) {
             self.sampleCount = sampleCount
             self.duration = duration
             self.sampleCountText = "\(sampleCount)"
@@ -53,7 +53,7 @@ public class BatchDataConfigurationManager {
         }
         
         /// 기본값 설정
-        public static func defaultConfiguration(for sensorType: SensorType) -> SensorConfiguration {
+        internal static func defaultConfiguration(for sensorType: SensorType) -> SensorConfiguration {
             switch sensorType {
             case .eeg:
                 return SensorConfiguration(sampleCount: 250, duration: 1)
@@ -68,11 +68,11 @@ public class BatchDataConfigurationManager {
     }
     
     /// 유효성 검사 결과
-    public struct ValidationResult {
-        public let isValid: Bool
-        public let message: String?
+    internal struct ValidationResult {
+        internal let isValid: Bool
+        internal let message: String?
         
-        public init(isValid: Bool, message: String? = nil) {
+        internal init(isValid: Bool, message: String? = nil) {
             self.isValid = isValid
             self.message = message
         }
@@ -85,7 +85,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 펜딩 중인 설정 변경 타입
-    public enum PendingConfigurationChange {
+    internal enum PendingConfigurationChange {
         case sensorSelection(Set<SensorType>)
         case sampleCount(value: Int, sensor: SensorType)
         case duration(value: Int, sensor: SensorType)
@@ -94,42 +94,42 @@ public class BatchDataConfigurationManager {
     // MARK: - Properties (델리게이트 패턴으로 변경)
     
     /// 선택된 수집 모드
-    private(set) public var selectedCollectionMode: CollectionMode = .sampleCount {
+    private(set) internal var selectedCollectionMode: CollectionMode = .sampleCount {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdateCollectionMode: selectedCollectionMode)
         }
     }
     
     /// 선택된 센서들
-    private(set) public var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer] {
+    private(set) internal var selectedSensors: Set<SensorType> = [.eeg, .ppg, .accelerometer] {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdateSelectedSensors: selectedSensors)
         }
     }
     
     /// 모니터링 활성화 상태
-    private(set) public var isMonitoringActive = false {
+    private(set) internal var isMonitoringActive = false {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdateMonitoringState: isMonitoringActive)
         }
     }
     
     /// 경고 팝업 표시 상태
-    private(set) public var showRecordingChangeWarning = false {
+    private(set) internal var showRecordingChangeWarning = false {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdateShowRecordingChangeWarning: showRecordingChangeWarning)
         }
     }
     
     /// 펜딩된 센서 선택 (하위 호환성을 위해 유지)
-    private(set) public var pendingSensorSelection: Set<SensorType>? {
+    private(set) internal var pendingSensorSelection: Set<SensorType>? {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdatePendingSensorSelection: pendingSensorSelection)
         }
     }
     
     /// 펜딩된 설정 변경
-    private(set) public var pendingConfigurationChange: PendingConfigurationChange? {
+    private(set) internal var pendingConfigurationChange: PendingConfigurationChange? {
         didSet {
             delegate?.batchDataConfigurationManager(self, didUpdatePendingConfigurationChange: pendingConfigurationChange)
         }
@@ -149,14 +149,14 @@ public class BatchDataConfigurationManager {
     
     // MARK: - Initialization
     
-    public init(bluetoothKit: BluetoothKit) {
+    internal init(bluetoothKit: BluetoothKit) {
         self.bluetoothKit = bluetoothKit
         self.initializeDefaultConfigurations()
     }
     
-    // MARK: - Public Configuration Methods
+    // MARK: - Internal Configuration Methods
     
-    public func startMonitoring() {
+    internal func startMonitoring() {
         guard !self.selectedSensors.isEmpty else { return }
         
         // BluetoothKit에 센서 선택 전달
@@ -170,7 +170,7 @@ public class BatchDataConfigurationManager {
         self.isMonitoringActive = true
     }
     
-    public func stopMonitoring() {
+    internal func stopMonitoring() {
         // BluetoothKit에서 센서 선택을 비우고 모니터링 비활성화
         self.bluetoothKit.setSelectedSensors([])  // 모든 센서 수신 중단
         self.bluetoothKit.disableMonitoring()
@@ -182,7 +182,7 @@ public class BatchDataConfigurationManager {
         self.isMonitoringActive = false
     }
     
-    public func updateSensorSelection(_ sensors: Set<SensorType>) {
+    internal func updateSensorSelection(_ sensors: Set<SensorType>) {
         // 기록 중이라면 경고 후 사용자 선택 요청
         if isMonitoringActive && self.bluetoothKit.isRecording {
             // UI에 경고 팝업 표시 요청
@@ -197,7 +197,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 사용자가 경고 팝업에서 "기록 중지 후 변경"을 선택했을 때 호출
-    public func confirmSensorChangeWithRecordingStop() {
+    internal func confirmSensorChangeWithRecordingStop() {
         guard let pendingChange = self.pendingConfigurationChange else { return }
         
         // 기록 중지
@@ -220,7 +220,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 사용자가 경고 팝업에서 "취소"를 선택했을 때 호출
-    public func cancelSensorChange() {
+    internal func cancelSensorChange() {
         // 임시 저장 정리
         self.pendingConfigurationChange = nil
         self.pendingSensorSelection = nil
@@ -241,7 +241,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 수집 모드 업데이트
-    public func updateCollectionMode(_ mode: CollectionMode) {
+    internal func updateCollectionMode(_ mode: CollectionMode) {
         guard selectedCollectionMode != mode else { return }
         selectedCollectionMode = mode
         
@@ -254,27 +254,27 @@ public class BatchDataConfigurationManager {
     // MARK: - Sensor Configuration Access
     
     /// 특정 센서의 샘플 수를 반환
-    public func getSampleCount(for sensor: SensorType) -> Int {
+    internal func getSampleCount(for sensor: SensorType) -> Int {
         return self.sensorConfigurations[sensor]?.sampleCount ?? SensorConfiguration.defaultConfiguration(for: sensor).sampleCount
     }
     
     /// 특정 센서의 시간(초)을 반환
-    public func getDuration(for sensor: SensorType) -> Int {
+    internal func getDuration(for sensor: SensorType) -> Int {
         return self.sensorConfigurations[sensor]?.duration ?? SensorConfiguration.defaultConfiguration(for: sensor).duration
     }
     
     /// 특정 센서의 샘플 수 텍스트를 반환
-    public func getSampleCountText(for sensor: SensorType) -> String {
+    internal func getSampleCountText(for sensor: SensorType) -> String {
         return self.sensorConfigurations[sensor]?.sampleCountText ?? "\(self.getSampleCount(for: sensor))"
     }
     
     /// 특정 센서의 시간 텍스트를 반환
-    public func getDurationText(for sensor: SensorType) -> String {
+    internal func getDurationText(for sensor: SensorType) -> String {
         return self.sensorConfigurations[sensor]?.durationText ?? "\(self.getDuration(for: sensor))"
     }
     
     /// 특정 센서의 샘플 수를 설정
-    public func setSampleCount(_ value: Int, for sensor: SensorType) {
+    internal func setSampleCount(_ value: Int, for sensor: SensorType) {
         // 기록 중이라면 경고 후 사용자 선택 요청
         if isMonitoringActive && self.bluetoothKit.isRecording {
             // UI에 경고 팝업 표시 요청 (설정 변경)
@@ -288,7 +288,7 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 시간을 설정
-    public func setDuration(_ value: Int, for sensor: SensorType) {
+    internal func setDuration(_ value: Int, for sensor: SensorType) {
         // 기록 중이라면 경고 후 사용자 선택 요청
         if isMonitoringActive && self.bluetoothKit.isRecording {
             // UI에 경고 팝업 표시 요청 (설정 변경)
@@ -302,13 +302,13 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 샘플 수 텍스트를 설정
-    public func setSampleCountText(_ text: String, for sensor: SensorType) {
+    internal func setSampleCountText(_ text: String, for sensor: SensorType) {
         self.ensureConfigurationExists(for: sensor)
         self.sensorConfigurations[sensor]?.sampleCountText = text
     }
     
     /// 특정 센서의 시간 텍스트를 설정
-    public func setDurationText(_ text: String, for sensor: SensorType) {
+    internal func setDurationText(_ text: String, for sensor: SensorType) {
         self.ensureConfigurationExists(for: sensor)
         self.sensorConfigurations[sensor]?.durationText = text
     }
@@ -316,45 +316,45 @@ public class BatchDataConfigurationManager {
     // MARK: - Validation Methods
     
     /// 샘플 수 유효성 검사
-    public func validateSampleCount(_ text: String, for sensor: SensorType) -> ValidationResult {
+    internal func validateSampleCount(_ text: String, for sensor: SensorType) -> ValidationResult {
         return self.validateValue(text, for: sensor, valueType: .sampleCount, range: ValidationRange.sampleCount)
     }
     
     /// 시간 유효성 검사
-    public func validateDuration(_ text: String, for sensor: SensorType) -> ValidationResult {
+    internal func validateDuration(_ text: String, for sensor: SensorType) -> ValidationResult {
         return self.validateValue(text, for: sensor, valueType: .duration, range: ValidationRange.duration)
     }
     
     // MARK: - Helper Methods
     
-    public func getExpectedTime(for sensor: SensorType, sampleCount: Int) -> Double {
+    internal func getExpectedTime(for sensor: SensorType, sampleCount: Int) -> Double {
         return sensor.expectedTime(for: sampleCount)
     }
     
-    public func getExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
+    internal func getExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
         return sensor.expectedSamples(for: TimeInterval(duration))
     }
     
     /// 모든 센서 설정을 기본값으로 리셋
-    public func resetToDefaults() {
+    internal func resetToDefaults() {
         self.initializeDefaultConfigurations()
     }
     
     /// 설정 상태 요약 반환
-    public func getConfigurationSummary() -> String {
+    internal func getConfigurationSummary() -> String {
         let mode = self.selectedCollectionMode.displayName
         let sensors = self.selectedSensors.map { $0.displayName }.joined(separator: ", ")
         return "모드: \(mode), 센서: \(sensors)"
     }
     
     /// 특정 센서가 선택되었는지 확인
-    public func isSensorSelected(_ sensor: SensorType) -> Bool {
+    internal func isSensorSelected(_ sensor: SensorType) -> Bool {
         return self.selectedSensors.contains(sensor)
     }
     
     /// 가속도계 모드를 업데이트합니다.
     /// 모니터링 중일 때 실시간으로 콘솔 출력 모드를 변경할 수 있습니다.
-    public func updateAccelerometerMode(_ mode: AccelerometerMode) {
+    internal func updateAccelerometerMode(_ mode: AccelerometerMode) {
         // 모니터링 중이고 batchDelegate가 있다면 즉시 모드 업데이트
         if isMonitoringActive, let delegate = self.batchDelegate {
             delegate.updateAccelerometerMode(mode)
