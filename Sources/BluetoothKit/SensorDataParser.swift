@@ -1,13 +1,34 @@
 import Foundation
 import CoreBluetooth
 
-// MARK: - Sensor Data Parser (Internal)
+// MARK: - SensorDataParser (Pure Business Logic)
 
-/// Internal class responsible for parsing raw sensor data packets into structured readings.
+/// 센서 데이터 패킷을 구조화된 읽기값으로 파싱하는 순수 비즈니스 로직 클래스입니다.
 ///
-/// This parser handles binary data from Bluetooth sensors and converts it into
-/// structured Swift types. All parsing parameters are configurable through
-/// `SensorConfiguration` to support different sensor hardware.
+/// 이 클래스는 UI 프레임워크와 완전히 독립적으로 작동하며, Bluetooth 센서로부터 수신된
+/// 바이너리 데이터를 구조화된 Swift 타입으로 변환합니다. 모든 파싱 매개변수는
+/// `SensorConfiguration`을 통해 설정 가능하여 다양한 센서 하드웨어를 지원합니다.
+/// 
+/// **주요 특징:**
+/// - UI 프레임워크 의존성 없음 (순수 비즈니스 로직)
+/// - 바이너리 데이터 파싱 전문화
+/// - 설정 가능한 센서 매개변수 지원
+/// - 엄격한 데이터 검증 및 오류 처리
+/// - 타임스탬프 처리 및 샘플링 레이트 계산
+/// - 멀티 샘플 패킷 지원
+///
+/// **지원 센서 타입:**
+/// - EEG (뇌전도): 2채널, 24비트 해상도, lead-off 감지
+/// - PPG (광전 용적 맥파): Red/IR LED, 심박수 모니터링용
+/// - 가속도계: 3축, 모션 감지용
+/// - 배터리: 배터리 레벨 모니터링
+///
+/// **사용법:**
+/// ```swift
+/// let parser = SensorDataParser(configuration: .default)
+/// let eegReadings = try parser.parseEEGData(rawData)
+/// let ppgReadings = try parser.parsePPGData(rawData)
+/// ```
 internal class SensorDataParser: @unchecked Sendable {
     private let configuration: SensorConfiguration
     
