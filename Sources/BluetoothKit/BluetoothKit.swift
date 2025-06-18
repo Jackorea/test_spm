@@ -351,6 +351,38 @@ public class BluetoothKit: @unchecked Sendable {
         }
     }
     
+    // MARK: - Batch Data Configuration Properties
+    
+    /// 선택된 수집 모드
+    public var batchSelectedCollectionMode: BatchDataConfigurationManager.CollectionMode {
+        return batchDataConfigurationManager.selectedCollectionMode
+    }
+    
+    /// 선택된 센서들
+    public var batchSelectedSensors: Set<SensorType> {
+        return batchDataConfigurationManager.selectedSensors
+    }
+    
+    /// 배치 데이터 모니터링 활성화 상태
+    public var isBatchMonitoringActive: Bool {
+        return batchDataConfigurationManager.isMonitoringActive
+    }
+    
+    /// 경고 팝업 표시 상태
+    public var showBatchRecordingChangeWarning: Bool {
+        return batchDataConfigurationManager.showRecordingChangeWarning
+    }
+    
+    /// 펜딩된 센서 선택 (하위 호환성을 위해 유지)
+    public var batchPendingSensorSelection: Set<SensorType>? {
+        return batchDataConfigurationManager.pendingSensorSelection
+    }
+    
+    /// 펜딩된 설정 변경
+    public var batchPendingConfigurationChange: BatchDataConfigurationManager.PendingConfigurationChange? {
+        return batchDataConfigurationManager.pendingConfigurationChange
+    }
+    
     // MARK: - Batch Data Collection
     
     /// 배치 단위로 센서 데이터를 수신하는 델리게이트.
@@ -401,6 +433,8 @@ public class BluetoothKit: @unchecked Sendable {
     
     private let bluetoothManager: BluetoothManager
     private let dataRecorder: DataRecorder
+    private let batchDataConfigurationManager: BatchDataConfigurationManager
+    private let sensorDataParser: SensorDataParser
     private let configuration: SensorConfiguration
     private let logger: InternalLogger
     
@@ -477,6 +511,8 @@ public class BluetoothKit: @unchecked Sendable {
         self.logger = InternalLogger(isEnabled: false)  // 프로덕션 최적화
         self.bluetoothManager = BluetoothManager(configuration: configuration, logger: logger)
         self.dataRecorder = DataRecorder(logger: logger)
+        self.batchDataConfigurationManager = BatchDataConfigurationManager(bluetoothKit: self)
+        self.sensorDataParser = SensorDataParser(configuration: configuration)
         
         // 기본값: auto-reconnect 활성화 (대부분의 경우 유용함)
         self.isAutoReconnectEnabled = true
@@ -549,6 +585,22 @@ public class BluetoothKit: @unchecked Sendable {
         dataRecorder.startRecording(with: selectedSensors)
     }
     
+    /// 선택된 센서들과 함께 센서 데이터 기록을 시작합니다.
+    ///
+    /// - Parameter selectedSensors: 기록할 센서 타입들의 집합
+    ///
+    /// ## 예시
+    /// ```swift
+    /// // EEG와 PPG만 기록
+    /// bluetoothKit.startRecording(with: [.eeg, .ppg])
+    /// 
+    /// // 모든 센서 기록
+    /// bluetoothKit.startRecording(with: [.eeg, .ppg, .accelerometer])
+    /// ```
+    public func startRecording(with selectedSensors: Set<SensorType>) {
+        dataRecorder.startRecording(with: selectedSensors)
+    }
+    
     /// 센서 데이터 기록을 중지합니다.
     ///
     /// ## 예시
@@ -557,6 +609,123 @@ public class BluetoothKit: @unchecked Sendable {
     /// ```
     public func stopRecording() {
         dataRecorder.stopRecording()
+    }
+    
+    /// 기록 중에 선택된 센서를 업데이트합니다.
+    ///
+    /// 기록 중이 아닌 경우 아무 작업도 수행하지 않습니다.
+    /// 새로 선택된 센서만 향후 데이터가 기록됩니다.
+    ///
+    /// - Parameter selectedSensors: 기록할 센서 타입들의 집합
+    ///
+    /// ## 예시
+    /// ```swift
+    /// // 기록 중에 센서 선택 변경
+    /// bluetoothKit.updateRecordingSensors([.eeg, .accelerometer])
+    /// ```
+    public func updateRecordingSensors(_ selectedSensors: Set<SensorType>) {
+        dataRecorder.updateSelectedSensors(selectedSensors)
+    }
+    
+    /// 기록된 파일들의 URL 목록을 반환합니다.
+    ///
+    /// - Returns: 문서 디렉토리에 저장된 모든 기록 파일들의 URL 배열
+    ///
+    /// ## 예시
+    /// ```swift
+    /// let files = bluetoothKit.getRecordedFiles()
+    /// print("기록된 파일 개수: \(files.count)")
+    /// 
+    /// // 파일 공유
+    /// let activityViewController = UIActivityViewController(
+    ///     activityItems: files,
+    ///     applicationActivities: nil
+    /// )
+    /// ```
+    public func getRecordedFiles() -> [URL] {
+        return dataRecorder.getRecordedFiles()
+    }
+    
+    /// EEG 데이터를 직접 기록합니다.
+    ///
+    /// 일반적으로 자동으로 기록되지만, 커스텀 데이터 처리 후 수동으로 기록할 때 사용합니다.
+    ///
+    /// - Parameter readings: 기록할 EEG 읽기값 배열
+    ///
+    /// ## 예시
+    /// ```swift
+    /// let processedReadings = filterEEGData(originalReadings)
+    /// bluetoothKit.recordEEGData(processedReadings)
+    /// ```
+    public func recordEEGData(_ readings: [EEGReading]) {
+        dataRecorder.recordEEGData(readings)
+    }
+    
+    /// PPG 데이터를 직접 기록합니다.
+    ///
+    /// 일반적으로 자동으로 기록되지만, 커스텀 데이터 처리 후 수동으로 기록할 때 사용합니다.
+    ///
+    /// - Parameter readings: 기록할 PPG 읽기값 배열
+    ///
+    /// ## 예시
+    /// ```swift
+    /// let processedReadings = filterPPGData(originalReadings)
+    /// bluetoothKit.recordPPGData(processedReadings)
+    /// ```
+    public func recordPPGData(_ readings: [PPGReading]) {
+        dataRecorder.recordPPGData(readings)
+    }
+    
+    /// 가속도계 데이터를 직접 기록합니다.
+    ///
+    /// 일반적으로 자동으로 기록되지만, 커스텀 데이터 처리 후 수동으로 기록할 때 사용합니다.
+    ///
+    /// - Parameter readings: 기록할 가속도계 읽기값 배열
+    ///
+    /// ## 예시
+    /// ```swift
+    /// let processedReadings = filterAccelerometerData(originalReadings)
+    /// bluetoothKit.recordAccelerometerData(processedReadings)
+    /// ```
+    public func recordAccelerometerData(_ readings: [AccelerometerReading]) {
+        dataRecorder.recordAccelerometerData(readings)
+    }
+    
+    /// 배터리 데이터를 직접 기록합니다.
+    ///
+    /// 일반적으로 자동으로 기록되지만, 수동으로 기록할 때 사용합니다.
+    ///
+    /// - Parameter reading: 기록할 배터리 읽기값
+    ///
+    /// ## 예시
+    /// ```swift
+    /// bluetoothKit.recordBatteryData(batteryReading)
+    /// ```
+    public func recordBatteryData(_ reading: BatteryReading) {
+        dataRecorder.recordBatteryData(reading)
+    }
+    
+    /// 데이터 기록 이벤트를 처리하는 델리게이트입니다.
+    ///
+    /// 기록 시작, 중지, 오류 등의 이벤트를 받으려면 이 델리게이트를 설정하세요.
+    ///
+    /// ## 예시
+    /// ```swift
+    /// class RecordingHandler: DataRecorderDelegate {
+    ///     func dataRecorder(_ recorder: AnyObject, didStartRecording at: Date) {
+    ///         print("기록 시작됨")
+    ///     }
+    ///     
+    ///     func dataRecorder(_ recorder: AnyObject, didStopRecording at: Date, savedFiles: [URL]) {
+    ///         print("기록 완료: \(savedFiles.count)개 파일")
+    ///     }
+    /// }
+    /// 
+    /// bluetoothKit.dataRecorderDelegate = RecordingHandler()
+    /// ```
+    public weak var dataRecorderDelegate: DataRecorderDelegate? {
+        get { return dataRecorder.delegate }
+        set { dataRecorder.delegate = newValue }
     }
     
     /// 기록이 저장되는 디렉토리를 가져옵니다.
@@ -782,22 +951,6 @@ public class BluetoothKit: @unchecked Sendable {
         clearAllBuffers()
     }
     
-    /// 기록 중에 선택된 센서를 업데이트합니다.
-    ///
-    /// 이미 기록이 시작된 상태에서 센서 선택을 변경할 때 사용됩니다.
-    /// 새로 선택된 센서의 데이터만 파일에 기록됩니다.
-    ///
-    /// ## 예시
-    ///
-    /// ```swift
-    /// // 기록 중에 EEG만 선택하도록 변경
-    /// bluetoothKit.updateRecordingSensors([.eeg])
-    /// ```
-    public func updateRecordingSensors() {
-        let selectedSensors = Set(dataCollectionConfigs.keys)
-        dataRecorder.updateSelectedSensors(selectedSensors)
-    }
-    
     // MARK: - Private Setup
     
     /// 지정된 센서의 데이터 버퍼를 초기화합니다.
@@ -915,6 +1068,7 @@ public class BluetoothKit: @unchecked Sendable {
         bluetoothManager.delegate = self
         bluetoothManager.sensorDataDelegate = self
         dataRecorder.delegate = self
+        batchDataConfigurationManager.delegate = self
     }
     
     private func updateRecordedFiles() {
@@ -976,6 +1130,208 @@ public class BluetoothKit: @unchecked Sendable {
     /// ```
     public var selectedSensorTypes: Set<SensorType> {
         return selectedSensors
+    }
+    
+    // MARK: - Batch Data Configuration Methods
+    
+    /// 배치 데이터 모니터링을 시작합니다.
+    public func startBatchMonitoring() {
+        batchDataConfigurationManager.startMonitoring()
+    }
+    
+    /// 배치 데이터 모니터링을 중지합니다.
+    public func stopBatchMonitoring() {
+        batchDataConfigurationManager.stopMonitoring()
+    }
+    
+    /// 배치 데이터 센서 선택을 업데이트합니다.
+    public func updateBatchSensorSelection(_ sensors: Set<SensorType>) {
+        batchDataConfigurationManager.updateSensorSelection(sensors)
+    }
+    
+    /// 사용자가 경고 팝업에서 "기록 중지 후 변경"을 선택했을 때 호출합니다.
+    public func confirmBatchSensorChangeWithRecordingStop() {
+        batchDataConfigurationManager.confirmSensorChangeWithRecordingStop()
+    }
+    
+    /// 사용자가 경고 팝업에서 "취소"를 선택했을 때 호출합니다.
+    public func cancelBatchSensorChange() {
+        batchDataConfigurationManager.cancelSensorChange()
+    }
+    
+    /// 배치 데이터 수집 모드를 업데이트합니다.
+    public func updateBatchCollectionMode(_ mode: BatchDataConfigurationManager.CollectionMode) {
+        batchDataConfigurationManager.updateCollectionMode(mode)
+    }
+    
+    // MARK: - Batch Sensor Configuration Access
+    
+    /// 특정 센서의 샘플 수를 반환합니다.
+    public func getBatchSampleCount(for sensor: SensorType) -> Int {
+        return batchDataConfigurationManager.getSampleCount(for: sensor)
+    }
+    
+    /// 특정 센서의 시간(초)을 반환합니다.
+    public func getBatchDuration(for sensor: SensorType) -> Int {
+        return batchDataConfigurationManager.getDuration(for: sensor)
+    }
+    
+    /// 특정 센서의 샘플 수 텍스트를 반환합니다.
+    public func getBatchSampleCountText(for sensor: SensorType) -> String {
+        return batchDataConfigurationManager.getSampleCountText(for: sensor)
+    }
+    
+    /// 특정 센서의 시간 텍스트를 반환합니다.
+    public func getBatchDurationText(for sensor: SensorType) -> String {
+        return batchDataConfigurationManager.getDurationText(for: sensor)
+    }
+    
+    /// 특정 센서의 샘플 수를 설정합니다.
+    public func setBatchSampleCount(_ value: Int, for sensor: SensorType) {
+        batchDataConfigurationManager.setSampleCount(value, for: sensor)
+    }
+    
+    /// 특정 센서의 시간을 설정합니다.
+    public func setBatchDuration(_ value: Int, for sensor: SensorType) {
+        batchDataConfigurationManager.setDuration(value, for: sensor)
+    }
+    
+    /// 특정 센서의 샘플 수 텍스트를 설정합니다.
+    public func setBatchSampleCountText(_ text: String, for sensor: SensorType) {
+        batchDataConfigurationManager.setSampleCountText(text, for: sensor)
+    }
+    
+    /// 특정 센서의 시간 텍스트를 설정합니다.
+    public func setBatchDurationText(_ text: String, for sensor: SensorType) {
+        batchDataConfigurationManager.setDurationText(text, for: sensor)
+    }
+    
+    // MARK: - Batch Validation Methods
+    
+    /// 샘플 수 유효성 검사를 수행합니다.
+    public func validateBatchSampleCount(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchDataConfigurationManager.validateSampleCount(text, for: sensor)
+    }
+    
+    /// 시간 유효성 검사를 수행합니다.
+    public func validateBatchDuration(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchDataConfigurationManager.validateDuration(text, for: sensor)
+    }
+    
+    // MARK: - Batch Helper Methods
+    
+    /// 특정 센서와 샘플 수에 대한 예상 시간을 반환합니다.
+    public func getBatchExpectedTime(for sensor: SensorType, sampleCount: Int) -> Double {
+        return batchDataConfigurationManager.getExpectedTime(for: sensor, sampleCount: sampleCount)
+    }
+    
+    /// 특정 센서와 시간에 대한 예상 샘플 수를 반환합니다.
+    public func getBatchExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
+        return batchDataConfigurationManager.getExpectedSamples(for: sensor, duration: duration)
+    }
+    
+    /// 모든 배치 센서 설정을 기본값으로 리셋합니다.
+    public func resetBatchToDefaults() {
+        batchDataConfigurationManager.resetToDefaults()
+    }
+    
+    /// 배치 설정 상태 요약을 반환합니다.
+    public func getBatchConfigurationSummary() -> String {
+        return batchDataConfigurationManager.getConfigurationSummary()
+    }
+    
+    /// 특정 센서가 배치에서 선택되었는지 확인합니다.
+    public func isBatchSensorSelected(_ sensor: SensorType) -> Bool {
+        return batchDataConfigurationManager.isSensorSelected(sensor)
+    }
+    
+    /// 배치 가속도계 모드를 업데이트합니다.
+    public func updateBatchAccelerometerMode(_ mode: AccelerometerMode) {
+        batchDataConfigurationManager.updateAccelerometerMode(mode)
+    }
+    
+    // MARK: - Sensor Data Parsing
+    
+    /// EEG 원시 데이터를 구조화된 읽기값으로 파싱합니다.
+    ///
+    /// - Parameter data: EEG 특성에서 수신된 원시 바이너리 데이터
+    /// - Returns: 패킷에서 추출된 EEG 읽기값 배열
+    /// - Throws: 패킷 형식이 유효하지 않은 경우 `BluetoothKitError.dataParsingFailed`
+    ///
+    /// ## 예시
+    /// ```swift
+    /// do {
+    ///     let eegReadings = try bluetoothKit.parseEEGData(rawData)
+    ///     for reading in eegReadings {
+    ///         print("CH1: \(reading.channel1) μV, CH2: \(reading.channel2) μV")
+    ///     }
+    /// } catch {
+    ///     print("EEG 데이터 파싱 실패: \(error)")
+    /// }
+    /// ```
+    public func parseEEGData(_ data: Data) throws -> [EEGReading] {
+        return try sensorDataParser.parseEEGData(data)
+    }
+    
+    /// PPG 원시 데이터를 구조화된 읽기값으로 파싱합니다.
+    ///
+    /// - Parameter data: PPG 특성에서 수신된 원시 바이너리 데이터
+    /// - Returns: 패킷에서 추출된 PPG 읽기값 배열
+    /// - Throws: 패킷 형식이 유효하지 않은 경우 `BluetoothKitError.dataParsingFailed`
+    ///
+    /// ## 예시
+    /// ```swift
+    /// do {
+    ///     let ppgReadings = try bluetoothKit.parsePPGData(rawData)
+    ///     for reading in ppgReadings {
+    ///         print("Red: \(reading.red), IR: \(reading.ir)")
+    ///     }
+    /// } catch {
+    ///     print("PPG 데이터 파싱 실패: \(error)")
+    /// }
+    /// ```
+    public func parsePPGData(_ data: Data) throws -> [PPGReading] {
+        return try sensorDataParser.parsePPGData(data)
+    }
+    
+    /// 가속도계 원시 데이터를 구조화된 읽기값으로 파싱합니다.
+    ///
+    /// - Parameter data: 가속도계 특성에서 수신된 원시 바이너리 데이터
+    /// - Returns: 패킷에서 추출된 가속도계 읽기값 배열
+    /// - Throws: 패킷 형식이 유효하지 않은 경우 `BluetoothKitError.dataParsingFailed`
+    ///
+    /// ## 예시
+    /// ```swift
+    /// do {
+    ///     let accelReadings = try bluetoothKit.parseAccelerometerData(rawData)
+    ///     for reading in accelReadings {
+    ///         print("X: \(reading.x), Y: \(reading.y), Z: \(reading.z)")
+    ///     }
+    /// } catch {
+    ///     print("가속도계 데이터 파싱 실패: \(error)")
+    /// }
+    /// ```
+    public func parseAccelerometerData(_ data: Data) throws -> [AccelerometerReading] {
+        return try sensorDataParser.parseAccelerometerData(data)
+    }
+    
+    /// 배터리 원시 데이터를 구조화된 읽기값으로 파싱합니다.
+    ///
+    /// - Parameter data: 배터리 특성에서 수신된 원시 바이너리 데이터
+    /// - Returns: 현재 배터리 레벨을 포함한 배터리 읽기값
+    /// - Throws: 데이터가 유효하지 않은 경우 `BluetoothKitError.dataParsingFailed`
+    ///
+    /// ## 예시
+    /// ```swift
+    /// do {
+    ///     let batteryReading = try bluetoothKit.parseBatteryData(rawData)
+    ///     print("배터리 레벨: \(batteryReading.level)%")
+    /// } catch {
+    ///     print("배터리 데이터 파싱 실패: \(error)")
+    /// }
+    /// ```
+    public func parseBatteryData(_ data: Data) throws -> BatteryReading {
+        return try sensorDataParser.parseBatteryData(data)
     }
 }
 
@@ -1105,4 +1461,38 @@ extension BluetoothKit: DataRecorderDelegate {
 @available(iOS 13.0, macOS 10.15, *)
 extension BluetoothKit {
     // Duplicate functions removed - they are already defined earlier in the file
+}
+
+// MARK: - BatchDataConfigurationManagerDelegate
+
+@available(iOS 13.0, macOS 10.15, *)
+extension BluetoothKit: BatchDataConfigurationManagerDelegate {
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateCollectionMode mode: BatchDataConfigurationManager.CollectionMode) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateSelectedSensors sensors: Set<SensorType>) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateMonitoringState isActive: Bool) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateShowRecordingChangeWarning show: Bool) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdatePendingSensorSelection sensors: Set<SensorType>?) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdatePendingConfigurationChange change: BatchDataConfigurationManager.PendingConfigurationChange?) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateSensorConfigurations configurations: [SensorType: BatchDataConfigurationManager.SensorConfiguration]) {
+        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
 } 
