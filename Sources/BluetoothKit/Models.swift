@@ -625,7 +625,7 @@ internal protocol BluetoothManagerDelegate: AnyObject, Sendable {
 /// ```swift
 /// class RecordingHandler: DataRecorderDelegate {
 ///     func dataRecorder(_ recorder: AnyObject, didStartRecording at: Date) {
-///         updateUIForRecordingStart()
+///         showRecordingStarted()  
 ///     }
 ///     
 ///     func dataRecorder(_ recorder: AnyObject, didStopRecording at: Date, savedFiles: [URL]) {
@@ -633,7 +633,7 @@ internal protocol BluetoothManagerDelegate: AnyObject, Sendable {
 ///     }
 /// }
 /// ```
-internal protocol DataRecorderDelegate: AnyObject, Sendable {
+public protocol DataRecorderDelegate: AnyObject, Sendable {
     /// 데이터 기록이 시작되었을 때 호출됩니다.
     ///
     /// - Parameters:
