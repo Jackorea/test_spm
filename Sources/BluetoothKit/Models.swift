@@ -672,15 +672,14 @@ public protocol DataRecorderDelegate: AnyObject, Sendable {
 ///
 /// ```swift
 /// // ✅ 올바른 사용법 - 오류 처리
-/// switch bluetoothKit.connectionState {
-/// case .failed(let error):
-///     if error.localizedDescription.contains("Bluetooth is not available") {
-///         showBluetoothOffAlert()
-///     } else {
-///         showGenericError(error.localizedDescription)
-///     }
-/// default:
-///     break
+/// do {
+///     try bluetoothKit.startScanning()
+/// } catch BluetoothKitError.bluetoothUnavailable {
+///     showBluetoothOffAlert()
+/// } catch BluetoothKitError.alreadyScanning {
+///     print("이미 스캔 중입니다")
+/// } catch {
+///     print("알 수 없는 오류: \(error)")
 /// }
 /// 
 /// // ❌ 잘못된 사용법 - 직접 오류 생성하지 마세요
@@ -692,6 +691,28 @@ internal enum BluetoothKitError: LocalizedError, Sendable, Equatable {
     
     /// 요청된 디바이스를 찾을 수 없습니다.
     case deviceNotFound
+    
+    /// 이미 스캔이 진행 중입니다.
+    case alreadyScanning
+    
+    /// 이미 디바이스에 연결되어 있습니다.
+    case alreadyConnected
+    
+    /// 디바이스에 연결되지 않은 상태입니다.
+    case notConnected
+    
+    /// 이미 기록이 진행 중입니다.
+    case alreadyRecording
+    
+    /// 유효하지 않은 디바이스입니다.
+    ///
+    /// - Parameter reason: 디바이스가 유효하지 않은 이유
+    case invalidDevice(String)
+    
+    /// 유효하지 않은 설정입니다.
+    ///
+    /// - Parameter reason: 설정이 유효하지 않은 이유
+    case invalidConfiguration(String)
     
     /// 디바이스 연결에 실패했습니다.
     ///
@@ -720,6 +741,18 @@ internal enum BluetoothKitError: LocalizedError, Sendable, Equatable {
             return "Bluetooth is not available"
         case .deviceNotFound:
             return "Device not found"
+        case .alreadyScanning:
+            return "Already scanning for devices"
+        case .alreadyConnected:
+            return "Already connected to a device"
+        case .notConnected:
+            return "Not connected to any device"
+        case .alreadyRecording:
+            return "Already recording data"
+        case .invalidDevice(let reason):
+            return "Invalid device: \(reason)"
+        case .invalidConfiguration(let reason):
+            return "Invalid configuration: \(reason)"
         case .connectionFailed(let reason):
             return "Connection failed: \(reason)"
         case .dataParsingFailed(let reason):
@@ -734,15 +767,19 @@ internal enum BluetoothKitError: LocalizedError, Sendable, Equatable {
     // 수동 Equatable 구현
     public static func == (lhs: BluetoothKitError, rhs: BluetoothKitError) -> Bool {
         switch (lhs, rhs) {
-        case (.bluetoothUnavailable, .bluetoothUnavailable), (.deviceNotFound, .deviceNotFound):
+        case (.bluetoothUnavailable, .bluetoothUnavailable), 
+             (.deviceNotFound, .deviceNotFound),
+             (.alreadyScanning, .alreadyScanning),
+             (.alreadyConnected, .alreadyConnected),
+             (.notConnected, .notConnected),
+             (.alreadyRecording, .alreadyRecording):
             return true
-        case (.connectionFailed(let lhsReason), .connectionFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.dataParsingFailed(let lhsReason), .dataParsingFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.recordingFailed(let lhsReason), .recordingFailed(let rhsReason)):
-            return lhsReason == rhsReason
-        case (.fileOperationFailed(let lhsReason), .fileOperationFailed(let rhsReason)):
+        case (.invalidDevice(let lhsReason), .invalidDevice(let rhsReason)),
+             (.invalidConfiguration(let lhsReason), .invalidConfiguration(let rhsReason)),
+             (.connectionFailed(let lhsReason), .connectionFailed(let rhsReason)),
+             (.dataParsingFailed(let lhsReason), .dataParsingFailed(let rhsReason)),
+             (.recordingFailed(let lhsReason), .recordingFailed(let rhsReason)),
+             (.fileOperationFailed(let lhsReason), .fileOperationFailed(let rhsReason)):
             return lhsReason == rhsReason
         default:
             return false
