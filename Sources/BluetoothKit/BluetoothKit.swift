@@ -1393,8 +1393,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         latestEEGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.eeg] != nil {
+        // 기록 중이면 모든 선택된 센서 데이터를 기록
+        if isRecording {
             dataRecorder.recordEEGData([reading])
         }
         
@@ -1407,8 +1407,8 @@ extension BluetoothKit: SensorDataDelegate {
         
         latestPPGReading = reading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.ppg] != nil {
+        // 기록 중이면 모든 선택된 센서 데이터를 기록
+        if isRecording {
             dataRecorder.recordPPGData([reading])
         }
         
@@ -1425,8 +1425,8 @@ extension BluetoothKit: SensorDataDelegate {
         // 처리된 데이터를 최신 읽기값으로 저장
         latestAccelerometerReading = processedReading
         
-        // 배치 수집이 설정된 센서만 기록
-        if isRecording && dataCollectionConfigs[.accelerometer] != nil {
+        // 기록 중이면 모든 선택된 센서 데이터를 기록
+        if isRecording {
             dataRecorder.recordAccelerometerData([processedReading])
         }
         
