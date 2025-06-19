@@ -233,10 +233,17 @@ public class BatchDataConfigurationManager {
     private func applySensorSelection(_ sensors: Set<SensorType>) {
         self.selectedSensors = sensors
         
-        // 즉시 BatchDataConsoleLogger에 센서 선택 변경사항 반영
+        // 모니터링 상태에 관계없이 BatchDataConsoleLogger에 센서 선택 변경사항 반영
+        // batchDelegate가 없으면 미리 생성
+        if self.batchDelegate == nil {
+            self.batchDelegate = BatchDataConsoleLogger()
+            self.bluetoothKit.batchDataDelegate = self.batchDelegate
+        }
+        
+        self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
+        
+        // 모니터링 중이라면 BluetoothKit에서도 센서 데이터 수집 재설정
         if isMonitoringActive {
-            self.batchDelegate?.updateSelectedSensors(self.selectedSensors)
-            
             // BluetoothKit에서도 센서 데이터 수집 재설정
             self.reconfigureSensorsForSelection()
         }
