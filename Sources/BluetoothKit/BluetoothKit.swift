@@ -433,7 +433,9 @@ public class BluetoothKit: @unchecked Sendable {
     
     private let bluetoothManager: BluetoothManager
     private let dataRecorder: DataRecorder
-    private let batchDataConfigurationManager: BatchDataConfigurationManager
+    private lazy var batchDataConfigurationManager: BatchDataConfigurationManager = {
+        return BatchDataConfigurationManager(bluetoothKit: self)
+    }()
     private let sensorDataParser: SensorDataParser
     private let configuration: SensorConfiguration
     private let logger: InternalLogger
@@ -516,11 +518,11 @@ public class BluetoothKit: @unchecked Sendable {
         // 기본값: auto-reconnect 활성화 (대부분의 경우 유용함)
         self.isAutoReconnectEnabled = true
         
-        // BatchDataConfigurationManager는 self를 필요로 하므로 다른 모든 속성 초기화 후에 설정
-        self.batchDataConfigurationManager = BatchDataConfigurationManager(bluetoothKit: self)
-        
         setupDelegates()
         updateRecordedFiles()
+        
+        // BatchDataConfigurationManager delegate 설정 (lazy 프로퍼티 초기화 후)
+        setupBatchConfigurationDelegate()
         
         // BluetoothManager에 초기 auto-reconnect 설정 전달
         bluetoothManager.enableAutoReconnect(true)
@@ -1070,6 +1072,10 @@ public class BluetoothKit: @unchecked Sendable {
         bluetoothManager.delegate = self
         bluetoothManager.sensorDataDelegate = self
         dataRecorder.delegate = self
+        // batchDataConfigurationManager.delegate는 lazy 프로퍼티이므로 별도로 설정
+    }
+    
+    private func setupBatchConfigurationDelegate() {
         batchDataConfigurationManager.delegate = self
     }
     
