@@ -1182,8 +1182,8 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 특정 센서의 시간(초)을 반환합니다.
-    public func getBatchDuration(for sensor: SensorType) -> Int {
-        return batchDataConfigurationManager.getDuration(for: sensor)
+    public func getBatchSeconds(for sensor: SensorType) -> Int {
+        return batchDataConfigurationManager.getSeconds(for: sensor)
     }
     
     /// 특정 센서의 샘플 수 텍스트를 반환합니다.
@@ -1192,8 +1192,18 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 특정 센서의 시간 텍스트를 반환합니다.
-    public func getBatchDurationText(for sensor: SensorType) -> String {
-        return batchDataConfigurationManager.getDurationText(for: sensor)
+    public func getBatchSecondsText(for sensor: SensorType) -> String {
+        return batchDataConfigurationManager.getSecondsText(for: sensor)
+    }
+    
+    /// 특정 센서의 분을 반환합니다.
+    public func getBatchMinutes(for sensor: SensorType) -> Int {
+        return batchDataConfigurationManager.getMinutes(for: sensor)
+    }
+    
+    /// 특정 센서의 분 텍스트를 반환합니다.
+    public func getBatchMinutesText(for sensor: SensorType) -> String {
+        return batchDataConfigurationManager.getMinutesText(for: sensor)
     }
     
     /// 특정 센서의 샘플 수를 설정합니다.
@@ -1202,8 +1212,13 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 특정 센서의 시간을 설정합니다.
-    public func setBatchDuration(_ value: Int, for sensor: SensorType) {
-        batchDataConfigurationManager.setDuration(value, for: sensor)
+    public func setBatchSeconds(_ value: Int, for sensor: SensorType) {
+        batchDataConfigurationManager.setSeconds(value, for: sensor)
+    }
+    
+    /// 특정 센서의 분을 설정합니다.
+    public func setBatchMinutes(_ value: Int, for sensor: SensorType) {
+        batchDataConfigurationManager.setMinutes(value, for: sensor)
     }
     
     /// 특정 센서의 샘플 수 텍스트를 설정합니다.
@@ -1212,8 +1227,13 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 특정 센서의 시간 텍스트를 설정합니다.
-    public func setBatchDurationText(_ text: String, for sensor: SensorType) {
-        batchDataConfigurationManager.setDurationText(text, for: sensor)
+    public func setBatchSecondsText(_ text: String, for sensor: SensorType) {
+        batchDataConfigurationManager.setSecondsText(text, for: sensor)
+    }
+    
+    /// 특정 센서의 분 텍스트를 설정합니다.
+    public func setBatchMinutesText(_ text: String, for sensor: SensorType) {
+        batchDataConfigurationManager.setMinutesText(text, for: sensor)
     }
     
     // MARK: - Batch Validation Methods
@@ -1224,8 +1244,13 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 시간 유효성 검사를 수행합니다.
-    public func validateBatchDuration(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
-        return batchDataConfigurationManager.validateDuration(text, for: sensor)
+    public func validateBatchSeconds(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchDataConfigurationManager.validateSeconds(text, for: sensor)
+    }
+    
+    /// 분 유효성 검사를 수행합니다.
+    public func validateBatchMinutes(_ text: String, for sensor: SensorType) -> BatchDataConfigurationManager.ValidationResult {
+        return batchDataConfigurationManager.validateMinutes(text, for: sensor)
     }
     
     // MARK: - Batch Helper Methods
@@ -1236,8 +1261,18 @@ public class BluetoothKit: @unchecked Sendable {
     }
     
     /// 특정 센서와 시간에 대한 예상 샘플 수를 반환합니다.
-    public func getBatchExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
-        return batchDataConfigurationManager.getExpectedSamples(for: sensor, duration: duration)
+    public func getBatchExpectedSamples(for sensor: SensorType, seconds: Int) -> Int {
+        return batchDataConfigurationManager.getExpectedSamples(for: sensor, seconds: seconds)
+    }
+    
+    /// 특정 센서와 분에 대한 예상 샘플 수를 반환합니다.
+    public func getBatchExpectedSamplesForMinutes(for sensor: SensorType, minutes: Int) -> Int {
+        return batchDataConfigurationManager.getExpectedSamples(for: sensor, minutes: minutes)
+    }
+    
+    /// 특정 센서와 샘플 수에 대한 예상 분을 반환합니다.
+    public func getBatchExpectedMinutes(for sensor: SensorType, sampleCount: Int) -> Double {
+        return batchDataConfigurationManager.getExpectedMinutes(for: sensor, sampleCount: sampleCount)
     }
     
     /// 모든 배치 센서 설정을 기본값으로 리셋합니다.

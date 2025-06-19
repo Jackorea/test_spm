@@ -35,7 +35,8 @@ public class BatchDataConfigurationManager {
     
     public enum CollectionMode: String, CaseIterable {
         case sampleCount = "샘플 수"
-        case duration = "시간 (초)"
+        case seconds = "초단위"
+        case minutes = "분단위"
         
         public var displayName: String { rawValue }
     }
@@ -43,28 +44,32 @@ public class BatchDataConfigurationManager {
     /// 센서 설정을 관리하는 구조체
     public struct SensorConfiguration {
         public var sampleCount: Int
-        public var duration: Int
+        public var seconds: Int
+        public var minutes: Int
         public var sampleCountText: String
-        public var durationText: String
+        public var secondsText: String
+        public var minutesText: String
         
-        public init(sampleCount: Int, duration: Int) {
+        public init(sampleCount: Int, seconds: Int, minutes: Int = 1) {
             self.sampleCount = sampleCount
-            self.duration = duration
+            self.seconds = seconds
+            self.minutes = minutes
             self.sampleCountText = "\(sampleCount)"
-            self.durationText = "\(duration)"
+            self.secondsText = "\(seconds)"
+            self.minutesText = "\(minutes)"
         }
         
         /// 기본값 설정
         public static func defaultConfiguration(for sensorType: SensorType) -> SensorConfiguration {
             switch sensorType {
             case .eeg:
-                return SensorConfiguration(sampleCount: 250, duration: 1)
+                return SensorConfiguration(sampleCount: 250, seconds: 1, minutes: 1)
             case .ppg:
-                return SensorConfiguration(sampleCount: 50, duration: 1)
+                return SensorConfiguration(sampleCount: 50, seconds: 1, minutes: 1)
             case .accelerometer:
-                return SensorConfiguration(sampleCount: 30, duration: 1)
+                return SensorConfiguration(sampleCount: 30, seconds: 1, minutes: 1)
             case .battery:
-                return SensorConfiguration(sampleCount: 1, duration: 60)
+                return SensorConfiguration(sampleCount: 1, seconds: 60, minutes: 1)
             }
         }
     }
@@ -83,14 +88,16 @@ public class BatchDataConfigurationManager {
     /// 유효성 검사 범위 정의
     private enum ValidationRange {
         static let sampleCount = 1...100000
-        static let duration = 1...3600
+        static let seconds = 1...3600
+        static let minutes = 1...60
     }
     
     /// 펜딩 중인 설정 변경 타입
     public enum PendingConfigurationChange {
         case sensorSelection(Set<SensorType>)
         case sampleCount(value: Int, sensor: SensorType)
-        case duration(value: Int, sensor: SensorType)
+        case seconds(value: Int, sensor: SensorType)
+        case minutes(value: Int, sensor: SensorType)
     }
     
     // MARK: - Properties (델리게이트 패턴으로 변경)
@@ -211,8 +218,10 @@ public class BatchDataConfigurationManager {
             self.applySensorSelection(sensors)
         case .sampleCount(let value, let sensor):
             self.applySampleCountChange(value, for: sensor)
-        case .duration(let value, let sensor):
-            self.applyDurationChange(value, for: sensor)
+        case .seconds(let value, let sensor):
+            self.applySecondsChange(value, for: sensor)
+        case .minutes(let value, let sensor):
+            self.applyMinutesChange(value, for: sensor)
         }
         
         // 임시 저장 정리
@@ -268,8 +277,13 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 시간(초)을 반환
-    public func getDuration(for sensor: SensorType) -> Int {
-        return self.sensorConfigurations[sensor]?.duration ?? SensorConfiguration.defaultConfiguration(for: sensor).duration
+    public func getSeconds(for sensor: SensorType) -> Int {
+        return self.sensorConfigurations[sensor]?.seconds ?? SensorConfiguration.defaultConfiguration(for: sensor).seconds
+    }
+    
+    /// 특정 센서의 분(분)을 반환
+    public func getMinutes(for sensor: SensorType) -> Int {
+        return self.sensorConfigurations[sensor]?.minutes ?? SensorConfiguration.defaultConfiguration(for: sensor).minutes
     }
     
     /// 특정 센서의 샘플 수 텍스트를 반환
@@ -278,8 +292,13 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 시간 텍스트를 반환
-    public func getDurationText(for sensor: SensorType) -> String {
-        return self.sensorConfigurations[sensor]?.durationText ?? "\(self.getDuration(for: sensor))"
+    public func getSecondsText(for sensor: SensorType) -> String {
+        return self.sensorConfigurations[sensor]?.secondsText ?? "\(self.getSeconds(for: sensor))"
+    }
+    
+    /// 특정 센서의 분 텍스트를 반환
+    public func getMinutesText(for sensor: SensorType) -> String {
+        return self.sensorConfigurations[sensor]?.minutesText ?? "\(self.getMinutes(for: sensor))"
     }
     
     /// 특정 센서의 샘플 수를 설정
@@ -297,17 +316,31 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 시간을 설정
-    public func setDuration(_ value: Int, for sensor: SensorType) {
+    public func setSeconds(_ value: Int, for sensor: SensorType) {
         // 기록 중이라면 경고 후 사용자 선택 요청
         if isMonitoringActive && self.bluetoothKit.isRecording {
             // UI에 경고 팝업 표시 요청 (설정 변경)
-            self.pendingConfigurationChange = .duration(value: value, sensor: sensor)
+            self.pendingConfigurationChange = .seconds(value: value, sensor: sensor)
             self.showRecordingChangeWarning = true
             return
         }
         
         // 기록 중이 아니라면 즉시 적용
-        self.applyDurationChange(value, for: sensor)
+        self.applySecondsChange(value, for: sensor)
+    }
+    
+    /// 특정 센서의 분을 설정
+    public func setMinutes(_ value: Int, for sensor: SensorType) {
+        // 기록 중이라면 경고 후 사용자 선택 요청
+        if isMonitoringActive && self.bluetoothKit.isRecording {
+            // UI에 경고 팝업 표시 요청 (설정 변경)
+            self.pendingConfigurationChange = .minutes(value: value, sensor: sensor)
+            self.showRecordingChangeWarning = true
+            return
+        }
+        
+        // 기록 중이 아니라면 즉시 적용
+        self.applyMinutesChange(value, for: sensor)
     }
     
     /// 특정 센서의 샘플 수 텍스트를 설정
@@ -317,9 +350,15 @@ public class BatchDataConfigurationManager {
     }
     
     /// 특정 센서의 시간 텍스트를 설정
-    public func setDurationText(_ text: String, for sensor: SensorType) {
+    public func setSecondsText(_ text: String, for sensor: SensorType) {
         self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.durationText = text
+        self.sensorConfigurations[sensor]?.secondsText = text
+    }
+    
+    /// 특정 센서의 분 텍스트를 설정
+    public func setMinutesText(_ text: String, for sensor: SensorType) {
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.minutesText = text
     }
     
     // MARK: - Validation Methods
@@ -330,8 +369,13 @@ public class BatchDataConfigurationManager {
     }
     
     /// 시간 유효성 검사
-    public func validateDuration(_ text: String, for sensor: SensorType) -> ValidationResult {
-        return self.validateValue(text, for: sensor, valueType: .duration, range: ValidationRange.duration)
+    public func validateSeconds(_ text: String, for sensor: SensorType) -> ValidationResult {
+        return self.validateValue(text, for: sensor, valueType: .seconds, range: ValidationRange.seconds)
+    }
+    
+    /// 분 유효성 검사
+    public func validateMinutes(_ text: String, for sensor: SensorType) -> ValidationResult {
+        return self.validateValue(text, for: sensor, valueType: .minutes, range: ValidationRange.minutes)
     }
     
     // MARK: - Helper Methods
@@ -340,8 +384,18 @@ public class BatchDataConfigurationManager {
         return sensor.expectedTime(for: sampleCount)
     }
     
-    public func getExpectedSamples(for sensor: SensorType, duration: Int) -> Int {
-        return sensor.expectedSamples(for: TimeInterval(duration))
+    public func getExpectedSamples(for sensor: SensorType, seconds: Int) -> Int {
+        return sensor.expectedSamples(for: TimeInterval(seconds))
+    }
+    
+    /// 특정 센서와 분에 대한 예상 샘플 수를 반환합니다.
+    public func getExpectedSamples(for sensor: SensorType, minutes: Int) -> Int {
+        return sensor.expectedSamples(for: TimeInterval(minutes * 60))
+    }
+    
+    /// 특정 센서와 샘플 수에 대한 예상 분을 반환합니다.
+    public func getExpectedMinutes(for sensor: SensorType, sampleCount: Int) -> Double {
+        return sensor.expectedTime(for: sampleCount) / 60.0
     }
     
     /// 모든 센서 설정을 기본값으로 리셋
@@ -374,7 +428,8 @@ public class BatchDataConfigurationManager {
     
     private enum ValueType {
         case sampleCount
-        case duration
+        case seconds
+        case minutes
     }
     
     /// 기본 설정 초기화
@@ -426,9 +481,12 @@ public class BatchDataConfigurationManager {
             let sampleCount = self.getSampleCount(for: sensor)
             self.bluetoothKit.setDataCollection(sampleCount: sampleCount, for: sensor)
             
-        case .duration:
-            let duration = self.getDuration(for: sensor)
-            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(duration), for: sensor)
+        case .seconds:
+            let seconds = self.getSeconds(for: sensor)
+            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(seconds), for: sensor)
+        case .minutes:
+            let minutes = self.getMinutes(for: sensor)
+            self.bluetoothKit.setDataCollection(timeInterval: TimeInterval(minutes * 60), for: sensor)
         }
     }
     
@@ -442,11 +500,20 @@ public class BatchDataConfigurationManager {
     }
     
     /// 시간 업데이트
-    private func updateDuration(_ value: Int, for sensor: SensorType, originalValue: Int) {
+    private func updateSeconds(_ value: Int, for sensor: SensorType, originalValue: Int) {
         self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.duration = value
+        self.sensorConfigurations[sensor]?.seconds = value
         if value != originalValue {
-            self.sensorConfigurations[sensor]?.durationText = "\(value)"
+            self.sensorConfigurations[sensor]?.secondsText = "\(value)"
+        }
+    }
+    
+    /// 분 업데이트
+    private func updateMinutes(_ value: Int, for sensor: SensorType, originalValue: Int) {
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.minutes = value
+        if value != originalValue {
+            self.sensorConfigurations[sensor]?.minutesText = "\(value)"
         }
     }
     
@@ -476,10 +543,22 @@ public class BatchDataConfigurationManager {
     }
     
     /// 시간 변경 적용
-    private func applyDurationChange(_ value: Int, for sensor: SensorType) {
+    private func applySecondsChange(_ value: Int, for sensor: SensorType) {
         self.ensureConfigurationExists(for: sensor)
-        self.sensorConfigurations[sensor]?.duration = value
-        self.sensorConfigurations[sensor]?.durationText = "\(value)"
+        self.sensorConfigurations[sensor]?.seconds = value
+        self.sensorConfigurations[sensor]?.secondsText = "\(value)"
+        
+        // 모니터링 중이라면 센서 재설정
+        if isMonitoringActive && self.selectedSensors.contains(sensor) {
+            self.configureSensor(sensor, isInitial: false)
+        }
+    }
+    
+    /// 분 변경 적용
+    private func applyMinutesChange(_ value: Int, for sensor: SensorType) {
+        self.ensureConfigurationExists(for: sensor)
+        self.sensorConfigurations[sensor]?.minutes = value
+        self.sensorConfigurations[sensor]?.minutesText = "\(value)"
         
         // 모니터링 중이라면 센서 재설정
         if isMonitoringActive && self.selectedSensors.contains(sensor) {
@@ -508,8 +587,10 @@ public class BatchDataConfigurationManager {
         switch valueType {
         case .sampleCount:
             self.updateSampleCount(clampedValue, for: sensor, originalValue: value)
-        case .duration:
-            self.updateDuration(clampedValue, for: sensor, originalValue: value)
+        case .seconds:
+            self.updateSeconds(clampedValue, for: sensor, originalValue: value)
+        case .minutes:
+            self.updateMinutes(clampedValue, for: sensor, originalValue: value)
         }
         
         return ValidationResult(isValid: true)
