@@ -17,6 +17,8 @@ public protocol BluetoothKitDelegate: AnyObject {
     func bluetoothKit(_ kit: BluetoothKit, didUpdateRecordingState isRecording: Bool)
     /// 자동 재연결 설정이 변경되었을 때 호출
     func bluetoothKit(_ kit: BluetoothKit, didUpdateAutoReconnectState isEnabled: Bool)
+    /// 배치 모니터링 상태가 변경되었을 때 호출
+    func bluetoothKit(_ kit: BluetoothKit, didUpdateBatchMonitoringState isActive: Bool)
     /// 센서 데이터가 업데이트되었을 때 호출
     func bluetoothKit(_ kit: BluetoothKit, didUpdateEEGReading reading: EEGReading?)
     func bluetoothKit(_ kit: BluetoothKit, didUpdatePPGReading reading: PPGReading?)
@@ -1485,7 +1487,8 @@ extension BluetoothKit: BatchDataConfigurationManagerDelegate {
     }
     
     internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateMonitoringState isActive: Bool) {
-        // 내부적으로 처리, 외부 delegate에는 필요시 전달
+        // BluetoothKitDelegate에게 배치 모니터링 상태 변화 알림
+        delegate?.bluetoothKit(self, didUpdateBatchMonitoringState: isActive)
     }
     
     internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateShowRecordingChangeWarning show: Bool) {
