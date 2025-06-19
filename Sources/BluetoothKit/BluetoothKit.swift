@@ -511,11 +511,13 @@ public class BluetoothKit: @unchecked Sendable {
         self.logger = InternalLogger(isEnabled: false)  // 프로덕션 최적화
         self.bluetoothManager = BluetoothManager(configuration: configuration, logger: logger)
         self.dataRecorder = DataRecorder(logger: logger)
-        self.batchDataConfigurationManager = BatchDataConfigurationManager(bluetoothKit: self)
         self.sensorDataParser = SensorDataParser(configuration: configuration)
         
         // 기본값: auto-reconnect 활성화 (대부분의 경우 유용함)
         self.isAutoReconnectEnabled = true
+        
+        // BatchDataConfigurationManager는 self를 필요로 하므로 다른 모든 속성 초기화 후에 설정
+        self.batchDataConfigurationManager = BatchDataConfigurationManager(bluetoothKit: self)
         
         setupDelegates()
         updateRecordedFiles()
