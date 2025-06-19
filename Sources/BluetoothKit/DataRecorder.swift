@@ -69,12 +69,29 @@ internal class DataRecorder: @unchecked Sendable {
     
     /// 기록된 파일들의 URL 목록을 반환합니다.
     ///
-    /// - Returns: 문서 디렉토리에 저장된 모든 기록 파일들의 URL 배열
+    /// - Returns: 문서 디렉토리에 저장된 모든 기록 파일들의 URL 배열 (생성 날짜 최신순으로 정렬)
     internal func getRecordedFiles() -> [URL] {
-        return (try? FileManager.default.contentsOfDirectory(
-            at: recordingsDirectory,
-            includingPropertiesForKeys: nil
-        )) ?? []
+        do {
+            let files = try FileManager.default.contentsOfDirectory(
+                at: recordingsDirectory,
+                includingPropertiesForKeys: [.creationDateKey],
+                options: []
+            )
+            
+            // 생성 날짜순으로 정렬 (최신순 = 내림차순)
+            return files.sorted { (url1, url2) in
+                do {
+                    let date1 = try url1.resourceValues(forKeys: [.creationDateKey]).creationDate ?? Date.distantPast
+                    let date2 = try url2.resourceValues(forKeys: [.creationDateKey]).creationDate ?? Date.distantPast
+                    return date1 > date2  // 최신 파일이 먼저 오도록
+                } catch {
+                    // 날짜를 가져올 수 없는 경우 파일명으로 정렬
+                    return url1.lastPathComponent > url2.lastPathComponent
+                }
+            }
+        } catch {
+            return []
+        }
     }
     
     /// 센서 데이터 기록을 시작합니다.
