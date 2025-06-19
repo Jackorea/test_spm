@@ -1440,18 +1440,18 @@ extension BluetoothKit: SensorDataDelegate {
 @available(iOS 13.0, macOS 10.15, *)
 extension BluetoothKit: DataRecorderDelegate {
     
-    internal func dataRecorder(_ recorder: AnyObject, didStartRecording at: Date) {
+    public func dataRecorder(_ recorder: AnyObject, didStartRecording at: Date) {
         isRecording = true
         log("Started recording at: \(at)")
     }
     
-    internal func dataRecorder(_ recorder: AnyObject, didStopRecording at: Date, savedFiles: [URL]) {
+    public func dataRecorder(_ recorder: AnyObject, didStopRecording at: Date, savedFiles: [URL]) {
         isRecording = false
         updateRecordedFiles()
         log("Stopped recording at: \(at), saved \(savedFiles.count) files")
     }
     
-    internal func dataRecorder(_ recorder: AnyObject, didFailWithError error: Error) {
+    public func dataRecorder(_ recorder: AnyObject, didFailWithError error: Error) {
         log("Recording error: \(error.localizedDescription)")
     }
 }
@@ -1494,5 +1494,10 @@ extension BluetoothKit: BatchDataConfigurationManagerDelegate {
     
     internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, didUpdateSensorConfigurations configurations: [SensorType: BatchDataConfigurationManager.SensorConfiguration]) {
         // 내부적으로 처리, 외부 delegate에는 필요시 전달
+    }
+    
+    internal func batchDataConfigurationManager(_ manager: BatchDataConfigurationManager, needsUpdateRecordingSensors sensors: Set<SensorType>) {
+        // 기록 중 센서 업데이트 요청을 받아서 실제 updateRecordingSensors 호출
+        updateRecordingSensors(sensors)
     }
 } 
