@@ -67,7 +67,7 @@ public class BatchDataConfigurationManager {
             case .ppg:
                 return SensorConfiguration(sampleCount: 50, seconds: 1, minutes: 1)
             case .accelerometer:
-                return SensorConfiguration(sampleCount: 30, seconds: 1, minutes: 1)
+                return SensorConfiguration(sampleCount: 25, seconds: 1, minutes: 1)
             case .battery:
                 return SensorConfiguration(sampleCount: 1, seconds: 60, minutes: 1)
             }
